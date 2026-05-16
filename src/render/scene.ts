@@ -13,10 +13,18 @@ export type RenderScene = {
   readonly dispose: () => void;
 };
 
-export const createRenderScene = (host: HTMLElement): RenderScene => {
+export type RenderSceneOptions = {
+  readonly preserveDrawingBuffer?: boolean;
+};
+
+export const createRenderScene = (
+  host: HTMLElement,
+  options: RenderSceneOptions = {},
+): RenderScene => {
   const renderer = new WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
+    preserveDrawingBuffer: options.preserveDrawingBuffer ?? false,
   });
   renderer.setClearColor(0xffffff, 1);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));

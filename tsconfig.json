@@ -18,5 +18,5 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true
   },
-  "include": ["src", "test", "eslint.config.js", "vite.config.ts"]
+  "include": ["src", "test", "e2e", "eslint.config.js", "playwright.config.ts", "vite.config.ts"]
 }

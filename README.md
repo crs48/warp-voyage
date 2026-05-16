@@ -25,8 +25,16 @@ Minimal browser tunnel-dodging game built with Vite, TypeScript, Three.js, Vites
 npm ci
 npm run dev
 npm run test
+npm run test:unit
+npm run test:integration
 npm run lint
 npm run build
 ```
 
 The built site is emitted to `dist/`. Vite is configured with `base: "./"` so the app can be served from GitHub Pages project paths.
+
+Playwright integration tests require Chromium:
+
+```bash
+npx playwright install chromium
+```

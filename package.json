@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "vitest run",
+    "test:integration": "playwright test",
     "test:watch": "vitest",
     "lint": "eslint ."
   },
@@ -16,6 +18,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^22.15.19",
     "@types/three": "^0.184.1",
     "eslint": "^9.27.0",

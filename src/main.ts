@@ -18,6 +18,23 @@ import { boostKey, updateObstacleView } from "./render/obstacles";
 import { createRenderScene, type RenderScene } from "./render/scene";
 import { updateTubeView } from "./render/tubeMesh";
 
+declare global {
+  // Window augmentation requires an interface declaration.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface Window {
+    readonly __warpVoyageTest?: {
+      readonly getSnapshot: () => {
+        readonly distance: number;
+        readonly angle: number;
+        readonly status: string;
+        readonly scoreText: string;
+      };
+      readonly forceGameOver: () => void;
+      readonly restart: () => void;
+    };
+  }
+}
+
 const app = document.querySelector<HTMLDivElement>("#app");
 
 if (app === null) {
@@ -51,7 +68,9 @@ canvasHost.className = "game";
 app.append(canvasHost);
 
 const hud = createHud(app);
-const renderScene = createRenderScene(canvasHost);
+const renderScene = createRenderScene(canvasHost, {
+  preserveDrawingBuffer: import.meta.env.MODE === "test",
+});
 const input = createInputController(
   renderScene.renderer.domElement,
   hud.gyro,
@@ -142,3 +161,31 @@ renderScene.renderer.setAnimationLoop((timeMs: number) => {
   run = updateRun(run, dtSeconds);
   renderFrame(run);
 });
+
+if (import.meta.env.MODE === "test") {
+  Object.defineProperty(window, "__warpVoyageTest", {
+    configurable: true,
+    value: {
+      getSnapshot: () => ({
+        distance: run.game.player.distance,
+        angle: run.game.player.angle,
+        status: run.game.player.status,
+        scoreText: hud.score.textContent,
+      }),
+      forceGameOver: () => {
+        run = {
+          ...run,
+          game: {
+            ...run.game,
+            player: {
+              ...run.game.player,
+              status: "gameOver",
+            },
+          },
+        };
+        renderFrame(run);
+      },
+      restart,
+    },
+  });
+}

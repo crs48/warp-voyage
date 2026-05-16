@@ -3,6 +3,8 @@ dist/
 coverage/
 output/
 .playwright-cli/
+playwright-report/
+test-results/
 .DS_Store
 *.local
 npm-debug.log*
