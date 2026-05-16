@@ -16,6 +16,7 @@ import { updateCamera } from "./render/camera";
 import { createHud, updateHud, type Hud } from "./render/hud";
 import { boostKey, updateObstacleView } from "./render/obstacles";
 import { createRenderScene, type RenderScene } from "./render/scene";
+import { updateShipView } from "./render/ship";
 import { updateTubeView } from "./render/tubeMesh";
 
 declare global {
@@ -28,6 +29,7 @@ declare global {
         readonly angle: number;
         readonly status: string;
         readonly scoreText: string;
+        readonly crashFlashSeconds: number;
       };
       readonly forceGameOver: () => void;
       readonly restart: () => void;
@@ -51,6 +53,7 @@ type RunState = {
   readonly game: GameState;
   readonly world: World;
   readonly collectedBoosts: ReadonlySet<string>;
+  readonly crashFlashSeconds: number;
 };
 
 const createRunState = (highScore: number): RunState => {
@@ -59,6 +62,7 @@ const createRunState = (highScore: number): RunState => {
     game: createInitialGameState(highScore, seed),
     world: createWorld(seed, 0),
     collectedBoosts: new Set(),
+    crashFlashSeconds: 0,
   };
 };
 
@@ -119,6 +123,7 @@ const updateRun = (state: RunState, dtSeconds: number): RunState => {
     collision.player.status === "gameOver"
       ? maybeUpdateHighScore(window.localStorage, score)
       : Math.max(state.game.highScore, score);
+  const safeDt = Math.min(Math.max(dtSeconds, 0), 0.05);
 
   return {
     game: {
@@ -128,6 +133,9 @@ const updateRun = (state: RunState, dtSeconds: number): RunState => {
     },
     world,
     collectedBoosts,
+    crashFlashSeconds: collision.crashed
+      ? 0.75
+      : Math.max(0, state.crashFlashSeconds - safeDt),
   };
 };
 
@@ -144,12 +152,14 @@ const renderFrame = (state: RunState): void => {
     state.collectedBoosts,
   );
   updateCamera(scene.camera, player.angle);
+  updateShipView(scene.ship, player.angle, state.crashFlashSeconds);
   scene.renderer.render(scene.scene, scene.camera);
   updateHud(frameHud, {
     score: scoreFromDistance(player.distance),
     highScore: state.game.highScore,
     pattern: section?.pattern ?? "semiRandom",
     player,
+    crashFlashSeconds: state.crashFlashSeconds,
   });
 };
 
@@ -171,6 +181,7 @@ if (import.meta.env.MODE === "test") {
         angle: run.game.player.angle,
         status: run.game.player.status,
         scoreText: hud.score.textContent,
+        crashFlashSeconds: run.crashFlashSeconds,
       }),
       forceGameOver: () => {
         run = {
@@ -182,6 +193,7 @@ if (import.meta.env.MODE === "test") {
               status: "gameOver",
             },
           },
+          crashFlashSeconds: 0.75,
         };
         renderFrame(run);
       },

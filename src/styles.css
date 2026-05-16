@@ -123,6 +123,15 @@ body {
   pointer-events: auto;
 }
 
+.hud__crash {
+  position: fixed;
+  inset: 0;
+  border: 18px solid #ff2555;
+  background:
+    radial-gradient(circle at center, transparent 46%, rgb(255 37 85 / 24%) 100%);
+  pointer-events: none;
+}
+
 .hud__gameover[hidden] {
   display: none;
 }

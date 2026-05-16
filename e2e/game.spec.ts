@@ -5,6 +5,7 @@ type GameSnapshot = {
   readonly angle: number;
   readonly status: string;
   readonly scoreText: string;
+  readonly crashFlashSeconds: number;
 };
 
 const readSnapshot = async (page: Page): Promise<GameSnapshot> => {
@@ -79,6 +80,7 @@ test("the full game renders, responds to controls, and restarts", async ({ page 
   expect(afterInput.angle).toBeLessThan(beforeInput.angle);
 
   await page.evaluate(() => window.__warpVoyageTest?.forceGameOver());
+  expect((await readSnapshot(page)).crashFlashSeconds).toBeGreaterThan(0);
   await expect(page.getByRole("button", { name: "Restart" })).toBeVisible();
   await page.getByRole("button", { name: "Restart" }).click();
 

@@ -14,10 +14,11 @@ export const updateCamera = (
   playerAngle: number,
 ): void => {
   const radial = radialForAngle(playerAngle);
-  const position = radial.clone().multiplyScalar(TUBE_RADIUS - 3.2).add(new Vector3(0, 0, 7));
-  const target = radial.clone().multiplyScalar(TUBE_RADIUS - 1.4).add(new Vector3(0, 0, -36));
+  const inward = radial.clone().negate();
+  const position = radial.clone().multiplyScalar(TUBE_RADIUS - 2.9).add(new Vector3(0, 0, 10));
+  const target = radial.clone().multiplyScalar(TUBE_RADIUS - 0.85).add(new Vector3(0, 0, -24));
 
   camera.position.lerp(position, 0.18);
-  camera.up.lerp(radial, 0.15).normalize();
+  camera.up.lerp(inward, 0.15).normalize();
   camera.lookAt(target);
 };

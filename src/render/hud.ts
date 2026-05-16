@@ -9,6 +9,7 @@ export type Hud = {
   readonly restart: HTMLButtonElement;
   readonly gyro: HTMLButtonElement;
   readonly gyroStatus: HTMLDivElement;
+  readonly crash: HTMLDivElement;
 };
 
 export type HudFrame = {
@@ -16,6 +17,7 @@ export type HudFrame = {
   readonly highScore: number;
   readonly pattern: string;
   readonly player: PlayerState;
+  readonly crashFlashSeconds: number;
 };
 
 export const createHud = (host: HTMLElement): Hud => {
@@ -44,6 +46,7 @@ export const createHud = (host: HTMLElement): Hud => {
       <button type="button" class="hud__button" data-gyro>Gyro</button>
       <div class="hud__gyro" data-gyro-status>keyboard</div>
     </div>
+    <div class="hud__crash" data-crash hidden></div>
     <div class="hud__gameover" data-gameover hidden>
       <div class="hud__title">Warp Voyage</div>
       <button type="button" class="hud__restart" data-restart>Restart</button>
@@ -89,6 +92,7 @@ export const createHud = (host: HTMLElement): Hud => {
     restart: queryButton("[data-restart]"),
     gyro: queryButton("[data-gyro]"),
     gyroStatus: queryDiv("[data-gyro-status]"),
+    crash: queryDiv("[data-crash]"),
   };
 };
 
@@ -104,4 +108,7 @@ export const updateHud = (hud: Hud, frame: HudFrame): void => {
   if (gameOver !== null) {
     gameOver.hidden = frame.player.status !== "gameOver";
   }
+
+  hud.crash.hidden = frame.crashFlashSeconds <= 0;
+  hud.crash.style.opacity = String(Math.min(0.65, frame.crashFlashSeconds * 1.35));
 };
