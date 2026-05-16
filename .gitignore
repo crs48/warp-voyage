@@ -1,6 +1,8 @@
 node_modules/
 dist/
 coverage/
+output/
+.playwright-cli/
 .DS_Store
 *.local
 npm-debug.log*
