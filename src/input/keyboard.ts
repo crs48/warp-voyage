@@ -22,7 +22,7 @@ export const createKeyboardInput = (target: Window = window): KeyboardInput => {
     getSteer: () => {
       const left = pressed.has("ArrowLeft") || pressed.has("KeyA");
       const right = pressed.has("ArrowRight") || pressed.has("KeyD");
-      return (right ? 1 : 0) - (left ? 1 : 0);
+      return (left ? 1 : 0) - (right ? 1 : 0);
     },
     dispose: () => {
       target.removeEventListener("keydown", down);

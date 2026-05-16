@@ -76,7 +76,7 @@ test("the full game renders, responds to controls, and restarts", async ({ page 
 
   expect(afterInput.status).toBe("running");
   expect(afterInput.distance).toBeGreaterThan(beforeInput.distance);
-  expect(afterInput.angle).toBeGreaterThan(beforeInput.angle);
+  expect(afterInput.angle).toBeLessThan(beforeInput.angle);
 
   await page.evaluate(() => window.__warpVoyageTest?.forceGameOver());
   await expect(page.getByRole("button", { name: "Restart" })).toBeVisible();
