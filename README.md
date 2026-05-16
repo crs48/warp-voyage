@@ -6,8 +6,8 @@ Minimal browser tunnel-dodging game built with Vite, TypeScript, Three.js, Vites
 
 - `ArrowLeft` / `A`: rotate left
 - `ArrowRight` / `D`: rotate right
-- Touch left/right side of the screen on mobile
 - `Gyro`: request mobile tilt controls from a user gesture
+- Any key: restart after game over
 
 ## Game Loop
 

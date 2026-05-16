@@ -1,6 +1,5 @@
 import { createGyroInput } from "./gyro";
 import { createKeyboardInput } from "./keyboard";
-import { createTouchInput } from "./touch";
 
 export type InputController = {
   readonly getSteer: () => number;
@@ -8,12 +7,10 @@ export type InputController = {
 };
 
 export const createInputController = (
-  canvas: HTMLElement,
   gyroButton: HTMLButtonElement,
   gyroStatus: HTMLElement,
 ): InputController => {
   const keyboard = createKeyboardInput();
-  const touch = createTouchInput(canvas);
   const gyro = createGyroInput(gyroStatus);
   const requestGyro = (): void => {
     void gyro.request();
@@ -28,12 +25,10 @@ export const createInputController = (
         return keyboardSteer;
       }
 
-      const touchSteer = touch.getSteer();
-      return touchSteer !== 0 ? touchSteer : gyro.getSteer();
+      return gyro.getSteer();
     },
     dispose: () => {
       keyboard.dispose();
-      touch.dispose();
       gyro.dispose();
       gyroButton.removeEventListener("click", requestGyro);
     },

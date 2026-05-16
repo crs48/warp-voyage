@@ -76,7 +76,6 @@ const renderScene = createRenderScene(canvasHost, {
   preserveDrawingBuffer: import.meta.env.MODE === "test",
 });
 const input = createInputController(
-  renderScene.renderer.domElement,
   hud.gyro,
   hud.gyroStatus,
 );
@@ -90,6 +89,11 @@ const restart = (): void => {
 };
 
 hud.restart.addEventListener("click", restart);
+window.addEventListener("keydown", () => {
+  if (run.game.player.status === "gameOver") {
+    restart();
+  }
+});
 
 const updateRun = (state: RunState, dtSeconds: number): RunState => {
   const advancedPlayer = advancePlayer(

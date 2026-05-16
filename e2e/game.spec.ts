@@ -69,6 +69,16 @@ test("the full game renders, responds to controls, and restarts", async ({ page 
     .poll(async () => countNonWhiteCanvasPixels(canvas))
     .toBeGreaterThan(200);
 
+  const beforePointer = await readSnapshot(page);
+  await page.mouse.move(40, 360);
+  await page.mouse.down();
+  await page.waitForTimeout(250);
+  await page.mouse.up();
+  const afterPointer = await readSnapshot(page);
+
+  expect(afterPointer.distance).toBeGreaterThan(beforePointer.distance);
+  expect(afterPointer.angle).toBeCloseTo(beforePointer.angle, 3);
+
   const beforeInput = await readSnapshot(page);
   await page.keyboard.down("ArrowRight");
   await page.waitForTimeout(350);
@@ -82,7 +92,7 @@ test("the full game renders, responds to controls, and restarts", async ({ page 
   await page.evaluate(() => window.__warpVoyageTest?.forceGameOver());
   expect((await readSnapshot(page)).crashFlashSeconds).toBeGreaterThan(0);
   await expect(page.getByRole("button", { name: "Restart" })).toBeVisible();
-  await page.getByRole("button", { name: "Restart" }).click();
+  await page.keyboard.press("Space");
 
   await expect(page.getByRole("button", { name: "Restart" })).toBeHidden();
   await expect
