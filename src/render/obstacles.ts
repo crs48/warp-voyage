@@ -10,10 +10,15 @@ import {
   Vector3,
 } from "three";
 
-import { CELL_DEPTH, LANE_ANGLE, LANES, TUBE_RADIUS, VISIBLE_CELLS } from "../game/config";
+import { CELL_DEPTH, LANES, TUBE_RADIUS, VISIBLE_CELLS } from "../game/config";
 import { hasLane } from "../game/coordinates";
 import { frameAtDistance, type World } from "../game/world";
-import { inwardForAngle, lanePanelPoint, tangentForAngle } from "./tubeMath";
+import {
+  inwardForAngle,
+  lanePanelPoint,
+  panelCenterAngle,
+  tangentForAngle,
+} from "./tubeMath";
 
 export type ObstacleView = {
   readonly group: Group;
@@ -67,7 +72,7 @@ const orientToPanel = (
   lane: number,
   distanceAxisScale = 1,
 ): void => {
-  const angle = lane * LANE_ANGLE;
+  const angle = panelCenterAngle(lane);
   const tangent = tangentForAngle(angle);
   const inward = inwardForAngle(angle);
   const forward = new Vector3(0, 0, -1);

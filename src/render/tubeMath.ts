@@ -19,6 +19,9 @@ export const inwardForAngle = (angle: number): Vector3 =>
 export const tangentForAngle = (angle: number): Vector3 =>
   new Vector3(Math.cos(angle), Math.sin(angle), 0).normalize();
 
+export const panelCenterAngle = (lane: Lane): number =>
+  (lane + 0.5) * LANE_ANGLE;
+
 export const tubePoint = (
   distance: number,
   angle: number,
@@ -37,7 +40,7 @@ export const lanePanelPoint = (
 ): Vector3 =>
   tubePoint(
     cell * CELL_DEPTH + CELL_DEPTH * 0.5,
-    lane * LANE_ANGLE,
+    panelCenterAngle(lane),
     originDistance,
     TUBE_RADIUS - inwardOffset,
   );
