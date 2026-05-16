@@ -1,6 +1,5 @@
 import "./styles.css";
 
-import { CELL_DEPTH } from "./game/config";
 import { resolveCollisionFrame } from "./game/collision";
 import { scoreFromDistance, maybeUpdateHighScore, readHighScore } from "./game/scoring";
 import { advancePlayer, createInitialGameState, type GameState } from "./game/state";
@@ -8,7 +7,7 @@ import {
   createWorld,
   ensureWorldAhead,
   findSection,
-  frameAtDistance,
+  framesNearDistance,
   trimWorldBehind,
   type World,
 } from "./game/world";
@@ -106,38 +105,55 @@ const updateRun = (state: RunState, dtSeconds: number): RunState => {
     ensureWorldAhead(state.world, advancedPlayer.distance),
     advancedPlayer.distance,
   );
-  const frame = frameAtDistance(world, advancedPlayer.distance);
-  const key =
-    frame?.boost === undefined
-      ? undefined
-      : boostKey(frame.section.id, frame.boost.cell);
-  const frameCenterDistance =
-    frame === undefined
-      ? undefined
-      : frame.section.startDistance + (frame.sectionCell + 0.5) * CELL_DEPTH;
-  const collision = resolveCollisionFrame(advancedPlayer, {
-    obstacleMask: frame?.obstacleMask ?? 0,
-    ...(frameCenterDistance === undefined
-      ? {}
-      : { obstacleCenterDistance: frameCenterDistance }),
-    ...(frame?.boost !== undefined &&
-    key !== undefined &&
-    !state.collectedBoosts.has(key)
-      ? {
-          boostLane: frame.boost.lane,
-          ...(frameCenterDistance === undefined
-            ? {}
-            : { boostCenterDistance: frameCenterDistance }),
-        }
-      : {}),
-  });
-  const collectedBoosts =
-    collision.collectedBoost && key !== undefined
-      ? new Set([...state.collectedBoosts, key])
-      : state.collectedBoosts;
-  const score = scoreFromDistance(collision.player.distance);
+  const nearbyFrames = framesNearDistance(world, advancedPlayer.distance);
+  const collisionState = nearbyFrames.reduce<{
+    readonly player: typeof advancedPlayer;
+    readonly collectedBoosts: ReadonlySet<string>;
+    readonly collectedBoost: boolean;
+    readonly crashed: boolean;
+  }>(
+    (current, frame) => {
+      if (current.crashed) {
+        return current;
+      }
+
+      const key =
+        frame.boost === undefined
+          ? undefined
+          : boostKey(frame.section.id, frame.boost.cell);
+      const collision = resolveCollisionFrame(current.player, {
+        obstacleMask: frame.obstacleMask,
+        obstacleCenterDistance: frame.centerDistance,
+        ...(frame.boost !== undefined &&
+        key !== undefined &&
+        !current.collectedBoosts.has(key)
+          ? {
+              boostLane: frame.boost.lane,
+              boostCenterDistance: frame.centerDistance,
+            }
+          : {}),
+      });
+
+      return {
+        player: collision.player,
+        collectedBoosts:
+          collision.collectedBoost && key !== undefined
+            ? new Set([...current.collectedBoosts, key])
+            : current.collectedBoosts,
+        collectedBoost: current.collectedBoost || collision.collectedBoost,
+        crashed: collision.crashed,
+      };
+    },
+    {
+      player: advancedPlayer,
+      collectedBoosts: state.collectedBoosts,
+      collectedBoost: false,
+      crashed: false,
+    },
+  );
+  const score = scoreFromDistance(collisionState.player.distance);
   const highScore =
-    collision.player.status === "gameOver"
+    collisionState.player.status === "gameOver"
       ? maybeUpdateHighScore(window.localStorage, score)
       : Math.max(state.game.highScore, score);
   const safeDt = Math.min(Math.max(dtSeconds, 0), 0.05);
@@ -145,12 +161,12 @@ const updateRun = (state: RunState, dtSeconds: number): RunState => {
   return {
     game: {
       ...state.game,
-      player: collision.player,
+      player: collisionState.player,
       highScore,
     },
     world,
-    collectedBoosts,
-    crashFlashSeconds: collision.crashed
+    collectedBoosts: collisionState.collectedBoosts,
+    crashFlashSeconds: collisionState.crashed
       ? 0.75
       : Math.max(0, state.crashFlashSeconds - safeDt),
   };

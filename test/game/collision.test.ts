@@ -48,6 +48,22 @@ describe("resolveCollisionFrame", () => {
     expect(result.player.status).toBe("running");
   });
 
+  it("does not crash after the ship has already passed the cube", () => {
+    const result = resolveCollisionFrame(
+      {
+        ...playerAtLane(4),
+        distance: 4,
+      },
+      {
+        obstacleMask: laneMask(4),
+        obstacleCenterDistance: 0,
+      },
+    );
+
+    expect(result.crashed).toBe(false);
+    expect(result.player.status).toBe("running");
+  });
+
   it("does not crash when the ship is outside the cube angular overlap", () => {
     const player = {
       ...playerAtLane(4),

@@ -107,7 +107,7 @@ export const updateObstacleView = (
   let cubeCount = 0;
   let boostCount = 0;
 
-  for (let offset = 1; offset <= VISIBLE_CELLS; offset += 1) {
+  for (let offset = 0; offset <= VISIBLE_CELLS; offset += 1) {
     const absoluteCell = baseCell + offset;
     const cellDistance = absoluteCell * CELL_DEPTH + CELL_DEPTH * 0.5;
     const frame = frameAtDistance(world, cellDistance);

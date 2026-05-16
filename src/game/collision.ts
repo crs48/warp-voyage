@@ -57,7 +57,8 @@ const crashPlayer = (player: PlayerState): PlayerState =>
         status: "gameOver",
       };
 
-const SHIP_COLLISION_HALF_DEPTH = 0.9;
+const SHIP_COLLISION_CENTER_Z = -0.25;
+const SHIP_COLLISION_HALF_DEPTH = 0.95;
 const SHIP_COLLISION_HALF_ANGLE = LANE_ANGLE * 0.22;
 const CUBE_COLLISION_HALF_ANGLE = Math.asin((OBSTACLE_CUBE_SIZE / 2) / TUBE_RADIUS);
 
@@ -66,7 +67,7 @@ const isDistanceOverlapping = (
   targetDistance: number | undefined,
 ): boolean =>
   targetDistance === undefined ||
-  Math.abs(playerDistance - targetDistance) <=
+  Math.abs(playerDistance - targetDistance - SHIP_COLLISION_CENTER_Z) <=
     OBSTACLE_CUBE_SIZE / 2 + SHIP_COLLISION_HALF_DEPTH;
 
 const isAngleOverlapping = (playerAngle: number, lane: Lane): boolean =>
