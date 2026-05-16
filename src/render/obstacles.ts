@@ -10,10 +10,10 @@ import {
   Vector3,
 } from "three";
 
-import { CELL_DEPTH, LANES, VISIBLE_CELLS } from "../game/config";
+import { CELL_DEPTH, LANE_ANGLE, LANES, TUBE_RADIUS, VISIBLE_CELLS } from "../game/config";
 import { hasLane } from "../game/coordinates";
 import { frameAtDistance, type World } from "../game/world";
-import { laneCenterPoint } from "./tubeMath";
+import { inwardForAngle, lanePanelPoint, tangentForAngle } from "./tubeMath";
 
 export type ObstacleView = {
   readonly group: Group;
@@ -24,6 +24,13 @@ export type ObstacleView = {
 
 const MAX_CUBES = VISIBLE_CELLS * LANES;
 const MAX_BOOSTS = VISIBLE_CELLS;
+const PANEL_FLAT_WIDTH = 2 * TUBE_RADIUS * Math.sin(Math.PI / LANES);
+const CUBE_SIZE = PANEL_FLAT_WIDTH * 0.98;
+const CUBE_WIDTH = CUBE_SIZE;
+const CUBE_HEIGHT = CUBE_SIZE;
+const CUBE_DEPTH = CUBE_SIZE;
+const CUBE_SURFACE_GAP = 0.03;
+const BOOST_SURFACE_GAP = 0.05;
 
 const cubeColor = (sectionId: number, cell: number, lane: number): Color => {
   const hue = ((sectionId * 47 + cell * 7 + lane * 29) % 360) / 360;
@@ -35,12 +42,12 @@ export const boostKey = (sectionId: number, cell: number): string =>
 
 export const createObstacleView = (): ObstacleView => {
   const group = new Group();
-  const cubeGeometry = new BoxGeometry(1.55, 1.55, 1.55);
+  const cubeGeometry = new BoxGeometry(CUBE_WIDTH, CUBE_DEPTH, CUBE_HEIGHT);
   const cubeMaterial = new MeshBasicMaterial({ vertexColors: true });
   const cubes = new InstancedMesh(cubeGeometry, cubeMaterial, MAX_CUBES);
   cubes.instanceMatrix.setUsage(DynamicDrawUsage);
 
-  const boostGeometry = new BoxGeometry(2.2, 0.18, 2.2);
+  const boostGeometry = new BoxGeometry(2.05, 0.16, 2.05);
   const boostMaterial = new MeshBasicMaterial({ color: 0x00d5ff });
   const boosts = new InstancedMesh(boostGeometry, boostMaterial, MAX_BOOSTS);
   boosts.instanceMatrix.setUsage(DynamicDrawUsage);
@@ -53,6 +60,21 @@ export const createObstacleView = (): ObstacleView => {
     boosts,
     dummy: new Object3D(),
   };
+};
+
+const orientToPanel = (
+  dummy: Object3D,
+  lane: number,
+  distanceAxisScale = 1,
+): void => {
+  const angle = lane * LANE_ANGLE;
+  const tangent = tangentForAngle(angle);
+  const inward = inwardForAngle(angle);
+  const forward = new Vector3(0, 0, -1);
+  const basis = new Matrix4().makeBasis(tangent, inward, forward);
+
+  dummy.quaternion.setFromRotationMatrix(basis);
+  dummy.scale.set(1, 1, distanceAxisScale);
 };
 
 const setInstance = (
@@ -92,9 +114,14 @@ export const updateObstacleView = (
         continue;
       }
 
-      const position = laneCenterPoint(absoluteCell, lane, distance);
+      const position = lanePanelPoint(
+        absoluteCell,
+        lane,
+        distance,
+        CUBE_DEPTH / 2 + CUBE_SURFACE_GAP,
+      );
       view.dummy.position.copy(position);
-      view.dummy.scale.setScalar(1);
+      orientToPanel(view.dummy, lane);
       view.dummy.updateMatrix();
 
       setInstance(
@@ -111,9 +138,14 @@ export const updateObstacleView = (
       boostCount < MAX_BOOSTS &&
       !collectedBoosts.has(boostKey(frame.section.id, frame.boost.cell))
     ) {
-      const position = laneCenterPoint(absoluteCell, frame.boost.lane, distance, -0.05);
+      const position = lanePanelPoint(
+        absoluteCell,
+        frame.boost.lane,
+        distance,
+        BOOST_SURFACE_GAP,
+      );
       view.dummy.position.copy(position);
-      view.dummy.scale.copy(new Vector3(1, 1, 1));
+      orientToPanel(view.dummy, frame.boost.lane, 0.72);
       view.dummy.updateMatrix();
       setInstance(view.boosts, boostCount, view.dummy.matrix);
       boostCount += 1;

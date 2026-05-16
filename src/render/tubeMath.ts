@@ -13,6 +13,12 @@ export const centerlinePoint = (distance: number, originDistance: number): Vecto
 export const radialForAngle = (angle: number): Vector3 =>
   new Vector3(Math.sin(angle), -Math.cos(angle), 0).normalize();
 
+export const inwardForAngle = (angle: number): Vector3 =>
+  radialForAngle(angle).negate();
+
+export const tangentForAngle = (angle: number): Vector3 =>
+  new Vector3(Math.cos(angle), Math.sin(angle), 0).normalize();
+
 export const tubePoint = (
   distance: number,
   angle: number,
@@ -23,15 +29,15 @@ export const tubePoint = (
     .sub(centerlinePoint(originDistance, originDistance))
     .add(radialForAngle(angle).multiplyScalar(radius));
 
-export const laneCenterPoint = (
+export const lanePanelPoint = (
   cell: number,
   lane: Lane,
   originDistance: number,
-  radialOffset = -0.55,
+  inwardOffset: number,
 ): Vector3 =>
   tubePoint(
     cell * CELL_DEPTH + CELL_DEPTH * 0.5,
     lane * LANE_ANGLE,
     originDistance,
-    TUBE_RADIUS + radialOffset,
+    TUBE_RADIUS - inwardOffset,
   );

@@ -57,7 +57,7 @@ type RunState = {
 };
 
 const createRunState = (highScore: number): RunState => {
-  const seed = Date.now() % 100_000;
+  const seed = import.meta.env.MODE === "test" ? 24_681 : Date.now() % 100_000;
   return {
     game: createInitialGameState(highScore, seed),
     world: createWorld(seed, 0),

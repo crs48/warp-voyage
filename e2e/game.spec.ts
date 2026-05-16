@@ -79,9 +79,14 @@ test("the full game renders, responds to controls, and restarts", async ({ page 
   expect(afterPointer.distance).toBeGreaterThan(beforePointer.distance);
   expect(afterPointer.angle).toBeCloseTo(beforePointer.angle, 3);
 
+  await page.evaluate(() => window.__warpVoyageTest?.restart());
+  await expect
+    .poll(async () => (await readSnapshot(page)).status)
+    .toBe("running");
+
   const beforeInput = await readSnapshot(page);
   await page.keyboard.down("ArrowRight");
-  await page.waitForTimeout(350);
+  await page.waitForTimeout(140);
   await page.keyboard.up("ArrowRight");
   const afterInput = await readSnapshot(page);
 
