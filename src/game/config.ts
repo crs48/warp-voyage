@@ -1,0 +1,12 @@
+export const LANES = 12;
+export const TUBE_RADIUS = 6;
+export const CELL_DEPTH = 4;
+export const VISIBLE_CELLS = 36;
+export const SECTION_LENGTH = 500;
+export const SECTION_CELLS = SECTION_LENGTH / CELL_DEPTH;
+export const LANE_ANGLE = (Math.PI * 2) / LANES;
+export const BASE_SPEED = 28;
+export const BOOST_MULTIPLIERS = [1, 2, 3, 4] as const;
+export const MAX_BOOST_LEVEL = 3;
+export const PLAYER_LANES_PER_SECOND = 3.2;
+export const POST_CRASH_INVULNERABLE_SECONDS = 1.1;
