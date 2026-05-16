@@ -8,5 +8,5 @@ export const LANE_ANGLE = (Math.PI * 2) / LANES;
 export const BASE_SPEED = 28;
 export const BOOST_MULTIPLIERS = [1, 2, 3, 4] as const;
 export const MAX_BOOST_LEVEL = 3;
-export const PLAYER_LANES_PER_SECOND = 3.2;
+export const PLAYER_LANES_PER_SECOND = 4.8;
 export const POST_CRASH_INVULNERABLE_SECONDS = 1.1;
