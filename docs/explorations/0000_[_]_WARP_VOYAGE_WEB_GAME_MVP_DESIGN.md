@@ -712,29 +712,29 @@ The game should have no per-frame React state updates because React is not neede
 
 ## Implementation Checklist
 
-- [ ] Create Vite + TypeScript project with Three.js.
-- [ ] Add a full-screen canvas and minimal DOM HUD.
-- [ ] Implement deterministic RNG.
-- [ ] Implement 12-lane/depth-cell coordinate helpers.
-- [ ] Render a straight 12-panel white tube with black grid lines.
-- [ ] Add rolling tube segment recycling.
-- [ ] Add player angular steering with arrow keys and `A/D`.
-- [ ] Add camera follow/roll behavior.
-- [ ] Implement section data and distance score.
-- [ ] Implement safe-path generator.
-- [ ] Implement semi-random pattern.
-- [ ] Implement reachability validator.
-- [ ] Render cube obstacles via `InstancedMesh`.
-- [ ] Add grid-based collision.
-- [ ] Add game-over state and restart button.
-- [ ] Save high score to `localStorage`.
-- [ ] Add staggered, spiral, line, and wall patterns.
-- [ ] Add boost patches on reachable safe cells.
-- [ ] Implement boost/shield crash rules.
-- [ ] Add section changes every 500 or 1000 units.
-- [ ] Add gentle tube bends.
-- [ ] Add gyro permission flow and tilt steering.
-- [ ] Tune safe corridor, density, speed, and boost multipliers.
+- [x] Create Vite + TypeScript project with Three.js.
+- [x] Add a full-screen canvas and minimal DOM HUD.
+- [x] Implement deterministic RNG.
+- [x] Implement 12-lane/depth-cell coordinate helpers.
+- [x] Render a straight 12-panel white tube with black grid lines.
+- [x] Add rolling tube segment recycling.
+- [x] Add player angular steering with arrow keys and `A/D`.
+- [x] Add camera follow/roll behavior.
+- [x] Implement section data and distance score.
+- [x] Implement safe-path generator.
+- [x] Implement semi-random pattern.
+- [x] Implement reachability validator.
+- [x] Render cube obstacles via `InstancedMesh`.
+- [x] Add grid-based collision.
+- [x] Add game-over state and restart button.
+- [x] Save high score to `localStorage`.
+- [x] Add staggered, spiral, line, and wall patterns.
+- [x] Add boost patches on reachable safe cells.
+- [x] Implement boost/shield crash rules.
+- [x] Add section changes every 500 or 1000 units.
+- [x] Add gentle tube bends.
+- [x] Add gyro permission flow and tilt steering.
+- [x] Tune safe corridor, density, speed, and boost multipliers.
 
 ## Validation Checklist
 
