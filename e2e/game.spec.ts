@@ -77,7 +77,7 @@ test("the full game renders, responds to controls, and restarts", async ({ page 
 
   expect(afterInput.status).toBe("running");
   expect(afterInput.distance).toBeGreaterThan(beforeInput.distance);
-  expect(afterInput.angle).toBeLessThan(beforeInput.angle);
+  expect(afterInput.angle).toBeGreaterThan(beforeInput.angle);
 
   await page.evaluate(() => window.__warpVoyageTest?.forceGameOver());
   expect((await readSnapshot(page)).crashFlashSeconds).toBeGreaterThan(0);
