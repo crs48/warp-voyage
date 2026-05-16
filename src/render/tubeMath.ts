@@ -1,7 +1,7 @@
 import { Vector3 } from "three";
 
-import { CELL_DEPTH, LANE_ANGLE, TUBE_RADIUS } from "../game/config";
-import type { Lane } from "../game/coordinates";
+import { CELL_DEPTH, TUBE_RADIUS } from "../game/config";
+import { panelCenterAngle, type Lane } from "../game/coordinates";
 
 export const centerlinePoint = (distance: number, originDistance: number): Vector3 =>
   new Vector3(
@@ -18,9 +18,6 @@ export const inwardForAngle = (angle: number): Vector3 =>
 
 export const tangentForAngle = (angle: number): Vector3 =>
   new Vector3(Math.cos(angle), Math.sin(angle), 0).normalize();
-
-export const panelCenterAngle = (lane: Lane): number =>
-  (lane + 0.5) * LANE_ANGLE;
 
 export const tubePoint = (
   distance: number,

@@ -1,5 +1,6 @@
 import "./styles.css";
 
+import { CELL_DEPTH } from "./game/config";
 import { resolveCollisionFrame } from "./game/collision";
 import { scoreFromDistance, maybeUpdateHighScore, readHighScore } from "./game/scoring";
 import { advancePlayer, createInitialGameState, type GameState } from "./game/state";
@@ -110,12 +111,24 @@ const updateRun = (state: RunState, dtSeconds: number): RunState => {
     frame?.boost === undefined
       ? undefined
       : boostKey(frame.section.id, frame.boost.cell);
+  const frameCenterDistance =
+    frame === undefined
+      ? undefined
+      : frame.section.startDistance + (frame.sectionCell + 0.5) * CELL_DEPTH;
   const collision = resolveCollisionFrame(advancedPlayer, {
     obstacleMask: frame?.obstacleMask ?? 0,
+    ...(frameCenterDistance === undefined
+      ? {}
+      : { obstacleCenterDistance: frameCenterDistance }),
     ...(frame?.boost !== undefined &&
     key !== undefined &&
     !state.collectedBoosts.has(key)
-      ? { boostLane: frame.boost.lane }
+      ? {
+          boostLane: frame.boost.lane,
+          ...(frameCenterDistance === undefined
+            ? {}
+            : { boostCenterDistance: frameCenterDistance }),
+        }
       : {}),
   });
   const collectedBoosts =

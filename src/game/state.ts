@@ -5,6 +5,7 @@ import {
   PLAYER_LANES_PER_SECOND,
 } from "./config";
 import type { PlayerState } from "./collision";
+import { angleForLane } from "./coordinates";
 
 export type SteeringIntent = {
   readonly steer: number;
@@ -18,7 +19,7 @@ export type GameState = {
 
 export const createInitialPlayer = (): PlayerState => ({
   distance: 0,
-  angle: 0,
+  angle: angleForLane(0),
   boostLevel: 0,
   shielded: false,
   invulnerableSeconds: 0,

@@ -10,13 +10,17 @@ import {
   Vector3,
 } from "three";
 
-import { CELL_DEPTH, LANES, TUBE_RADIUS, VISIBLE_CELLS } from "../game/config";
-import { hasLane } from "../game/coordinates";
+import {
+  CELL_DEPTH,
+  LANES,
+  OBSTACLE_CUBE_SIZE,
+  VISIBLE_CELLS,
+} from "../game/config";
+import { hasLane, panelCenterAngle } from "../game/coordinates";
 import { frameAtDistance, type World } from "../game/world";
 import {
   inwardForAngle,
   lanePanelPoint,
-  panelCenterAngle,
   tangentForAngle,
 } from "./tubeMath";
 
@@ -29,11 +33,9 @@ export type ObstacleView = {
 
 const MAX_CUBES = VISIBLE_CELLS * LANES;
 const MAX_BOOSTS = VISIBLE_CELLS;
-const PANEL_FLAT_WIDTH = 2 * TUBE_RADIUS * Math.sin(Math.PI / LANES);
-const CUBE_SIZE = PANEL_FLAT_WIDTH * 0.98;
-const CUBE_WIDTH = CUBE_SIZE;
-const CUBE_HEIGHT = CUBE_SIZE;
-const CUBE_DEPTH = CUBE_SIZE;
+const CUBE_WIDTH = OBSTACLE_CUBE_SIZE;
+const CUBE_HEIGHT = OBSTACLE_CUBE_SIZE;
+const CUBE_DEPTH = OBSTACLE_CUBE_SIZE;
 const CUBE_SURFACE_GAP = 0.03;
 const BOOST_SURFACE_GAP = 0.05;
 
