@@ -57,3 +57,7 @@ Playwright integration tests require Chromium:
 ```bash
 npx playwright install chromium
 ```
+
+## Deployment
+
+Pushes to `main` run `.github/workflows/pages.yml`, which tests, lints, builds, and deploys `dist/` to GitHub Pages. In the repository's GitHub Pages settings, set **Build and deployment > Source** to **GitHub Actions**.
