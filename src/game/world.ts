@@ -1,4 +1,4 @@
-import { CELL_DEPTH, VISIBLE_CELLS } from "./config";
+import { CELL_DEPTH, VISIBLE_CELLS } from "../tube/space";
 import {
   cellFromDistance,
   type CellIndex,
@@ -23,10 +23,6 @@ export type WorldFrame = {
   readonly sectionCell: CellIndex;
   readonly obstacleMask: LaneMask;
   readonly boost?: BoostCell;
-};
-
-export type CollisionWorldFrame = WorldFrame & {
-  readonly centerDistance: number;
 };
 
 export const createWorld = (seed: number, startLane: Lane): World => ({
@@ -110,7 +106,7 @@ export const framesNearDistance = (
   world: World,
   distance: number,
   radiusCells = 2,
-): readonly CollisionWorldFrame[] => {
+): readonly WorldFrame[] => {
   const centerCell = cellFromDistance(distance);
 
   return Array.from(
@@ -118,15 +114,8 @@ export const framesNearDistance = (
     (_, index) => centerCell + index - radiusCells,
   )
     .filter((absoluteCell) => absoluteCell >= 0)
-    .map((absoluteCell) => absoluteCell * CELL_DEPTH + CELL_DEPTH * 0.5)
-    .map((centerDistance) => {
-      const frame = frameAtDistance(world, centerDistance);
-      return frame === undefined
-        ? undefined
-        : {
-            ...frame,
-            centerDistance,
-          };
-    })
-    .filter((frame): frame is CollisionWorldFrame => frame !== undefined);
+    .map((absoluteCell) =>
+      frameAtDistance(world, absoluteCell * CELL_DEPTH + CELL_DEPTH * 0.5),
+    )
+    .filter((frame): frame is WorldFrame => frame !== undefined);
 };

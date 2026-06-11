@@ -122,15 +122,12 @@ const updateRun = (state: RunState, dtSeconds: number): RunState => {
           ? undefined
           : boostKey(frame.section.id, frame.boost.cell);
       const collision = resolveCollisionFrame(current.player, {
+        cell: frame.absoluteCell,
         obstacleMask: frame.obstacleMask,
-        obstacleCenterDistance: frame.centerDistance,
         ...(frame.boost !== undefined &&
         key !== undefined &&
         !current.collectedBoosts.has(key)
-          ? {
-              boostLane: frame.boost.lane,
-              boostCenterDistance: frame.centerDistance,
-            }
+          ? { boostLane: frame.boost.lane }
           : {}),
       });
 

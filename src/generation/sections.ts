@@ -1,8 +1,5 @@
-import {
-  CELL_DEPTH,
-  SECTION_CELLS,
-  SECTION_LENGTH,
-} from "../game/config";
+import { SECTION_CELLS, SECTION_LENGTH } from "../game/config";
+import { CELL_DEPTH } from "../tube/space";
 import {
   corridorMask,
   hasLane,

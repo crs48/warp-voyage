@@ -1,9 +1,9 @@
 import {
   BASE_SPEED,
   BOOST_MULTIPLIERS,
-  LANE_ANGLE,
   PLAYER_LANES_PER_SECOND,
 } from "./config";
+import { LANE_ANGLE } from "../tube/space";
 import type { PlayerState } from "./collision";
 import { angleForLane } from "./coordinates";
 

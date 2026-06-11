@@ -1,11 +1,18 @@
-export const LANES = 12;
-export const TUBE_RADIUS = 6;
-export const CELL_DEPTH = 4;
-export const VISIBLE_CELLS = 36;
+import { CELL_DEPTH } from "../tube/space";
+
+// Temporary re-exports while src/render/ still imports spatial constants
+// from here; removed once the render layer reads src/tube/ directly.
+export {
+  CELL_DEPTH,
+  CUBE_SIZE as OBSTACLE_CUBE_SIZE,
+  LANE_ANGLE,
+  LANES,
+  TUBE_RADIUS,
+  VISIBLE_CELLS,
+} from "../tube/space";
+
 export const SECTION_LENGTH = 500;
 export const SECTION_CELLS = SECTION_LENGTH / CELL_DEPTH;
-export const LANE_ANGLE = (Math.PI * 2) / LANES;
-export const OBSTACLE_CUBE_SIZE = 2 * TUBE_RADIUS * Math.sin(Math.PI / LANES) * 0.98;
 export const BASE_SPEED = 28;
 export const BOOST_MULTIPLIERS = [1, 2, 3, 4] as const;
 export const MAX_BOOST_LEVEL = 3;

@@ -1,15 +1,13 @@
+// Collision lives entirely in tube space: the player rect and each occupied
+// cell rect are 2D intervals in (s, θ). No Vector3, no ship-geometry
+// constants — the rendered cube fills the same cellRect by definition.
+
+import { MAX_BOOST_LEVEL, POST_CRASH_INVULNERABLE_SECONDS } from "./config";
+import { cellRect, overlaps, playerRect, type TubeRect } from "../tube/space";
 import {
-  LANE_ANGLE,
-  MAX_BOOST_LEVEL,
-  OBSTACLE_CUBE_SIZE,
-  POST_CRASH_INVULNERABLE_SECONDS,
-  TUBE_RADIUS,
-} from "./config";
-import {
-  angularDistance,
   cellFromDistance,
   lanesFromMask,
-  panelCenterAngle,
+  type CellIndex,
   type Lane,
   type LaneMask,
 } from "./coordinates";
@@ -26,10 +24,9 @@ export type PlayerState = {
 };
 
 export type CollisionFrame = {
+  readonly cell: CellIndex;
   readonly obstacleMask: LaneMask;
-  readonly obstacleCenterDistance?: number;
-  readonly boostLane?: number;
-  readonly boostCenterDistance?: number;
+  readonly boostLane?: Lane;
 };
 
 export type CollisionResult = {
@@ -57,31 +54,8 @@ const crashPlayer = (player: PlayerState): PlayerState =>
         status: "gameOver",
       };
 
-const SHIP_COLLISION_CENTER_Z = -0.25;
-const SHIP_COLLISION_HALF_DEPTH = 0.95;
-const SHIP_COLLISION_HALF_ANGLE = LANE_ANGLE * 0.22;
-const CUBE_COLLISION_HALF_ANGLE = Math.asin((OBSTACLE_CUBE_SIZE / 2) / TUBE_RADIUS);
-
-const isDistanceOverlapping = (
-  playerDistance: number,
-  targetDistance: number | undefined,
-): boolean =>
-  targetDistance === undefined ||
-  Math.abs(playerDistance - targetDistance - SHIP_COLLISION_CENTER_Z) <=
-    OBSTACLE_CUBE_SIZE / 2 + SHIP_COLLISION_HALF_DEPTH;
-
-const isAngleOverlapping = (playerAngle: number, lane: Lane): boolean =>
-  angularDistance(playerAngle, panelCenterAngle(lane)) <=
-  CUBE_COLLISION_HALF_ANGLE + SHIP_COLLISION_HALF_ANGLE;
-
-const overlappingLane = (
-  player: PlayerState,
-  lanes: readonly Lane[],
-  centerDistance: number | undefined,
-): Lane | undefined =>
-  isDistanceOverlapping(player.distance, centerDistance)
-    ? lanes.find((lane) => isAngleOverlapping(player.angle, lane))
-    : undefined;
+const hitsLane = (player: TubeRect, cell: CellIndex, lane: Lane): boolean =>
+  overlaps(player, cellRect(cell, lane));
 
 export const resolveCollisionFrame = (
   player: PlayerState,
@@ -91,22 +65,13 @@ export const resolveCollisionFrame = (
     return { player, collectedBoost: false, crashed: false };
   }
 
-  const boostLane =
-    frame.boostLane === undefined
-      ? undefined
-      : overlappingLane(
-          player,
-          [frame.boostLane],
-          frame.boostCenterDistance ?? frame.obstacleCenterDistance,
-        );
-  const collectedBoost = boostLane !== undefined;
+  const rect = playerRect(player.distance, player.angle);
+  const collectedBoost =
+    frame.boostLane !== undefined && hitsLane(rect, frame.cell, frame.boostLane);
   const boostedPlayer = collectedBoost ? addBoost(player) : player;
-  const hitObstacle =
-    overlappingLane(
-      player,
-      lanesFromMask(frame.obstacleMask),
-      frame.obstacleCenterDistance,
-    ) !== undefined;
+  const hitObstacle = lanesFromMask(frame.obstacleMask).some((lane) =>
+    hitsLane(rect, frame.cell, lane),
+  );
 
   if (!hitObstacle) {
     return { player: boostedPlayer, collectedBoost, crashed: false };

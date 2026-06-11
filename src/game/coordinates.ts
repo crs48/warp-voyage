@@ -1,4 +1,4 @@
-import { CELL_DEPTH, LANE_ANGLE, LANES } from "./config";
+import { CELL_DEPTH, LANE_ANGLE, LANES } from "../tube/space";
 
 export type Lane = number;
 export type CellIndex = number;

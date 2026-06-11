@@ -1,4 +1,4 @@
-import { LANES } from "../game/config";
+import { LANES } from "../tube/space";
 import { normalizeLane, type Lane } from "../game/coordinates";
 import type { Rng } from "./rng";
 

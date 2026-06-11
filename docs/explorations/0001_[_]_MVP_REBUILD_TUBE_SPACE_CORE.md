@@ -336,10 +336,10 @@ writePanelColor(colors, vertexOffset, lerpColor(TUBE_WHITE, CUBE_BLACK, warn * 0
 
 Phase 1 — spatial core (game may be temporarily headless):
 
-- [ ] Create `src/tube/space.ts`: constants, `TubeRect`, `cellRect`, `overlaps` with angular wraparound, unit tests.
-- [ ] Move centerline out of `src/render/tubeMath.ts` into `src/tube/centerline.ts`; parameterize bends per section (amplitude/wavelength/axis from section seed).
-- [ ] Implement `cellTransform(cell, lane, bend)` returning the panel-center transform used by both panels and cubes; unit-test that a cube transform sits exactly at its `cellRect` center.
-- [ ] Rewrite `src/game/collision.ts` as pure `(s, θ)` interval overlap against occupancy masks; port the 8 existing collision tests; delete `SHIP_COLLISION_*` constants.
+- [x] Create `src/tube/space.ts`: constants, `TubeRect`, `cellRect`, `overlaps` with angular wraparound, unit tests.
+- [x] Move centerline out of `src/render/tubeMath.ts` into `src/tube/centerline.ts`; parameterize bends per section (amplitude/wavelength/axis from section seed). *(Implemented as world-seeded multi-sinusoid bends with a smoothstep warmup ramp — continuous across section boundaries, which per-section parameters would break.)*
+- [x] Implement `cellTransform(cell, lane, bend)` returning the panel-center transform used by both panels and cubes; unit-test that a cube transform sits exactly at its `cellRect` center.
+- [x] Rewrite `src/game/collision.ts` as pure `(s, θ)` interval overlap against occupancy masks; port the 8 existing collision tests; delete `SHIP_COLLISION_*` constants.
 
 Phase 2 — render against the core:
 
