@@ -11,7 +11,8 @@ import {
 } from "../tube/space";
 import { hasLane } from "../game/coordinates";
 import { frameAtDistance, type World } from "../game/world";
-import { telegraphStrength } from "./tubeMesh";
+import { cubeColorCss } from "./palette";
+import { computeTelegraphField } from "./telegraph";
 
 export type DebugOverlay = {
   readonly canvas: HTMLCanvasElement;
@@ -53,6 +54,8 @@ export const updateDebugOverlay = (
   world: World,
   playerS: number,
   playerAngle: number,
+  collectedBoosts: ReadonlySet<string>,
+  horizonCells?: number,
 ): void => {
   if (!overlay.visible) {
     return;
@@ -66,22 +69,31 @@ export const updateDebugOverlay = (
 
   context.clearRect(0, 0, WIDTH, HEIGHT);
   const baseCell = Math.floor(playerS / CELL_DEPTH);
+  const telegraph = computeTelegraphField(world, baseCell, collectedBoosts, horizonCells);
 
   for (let row = 0; row < ROWS; row += 1) {
     const absoluteCell = baseCell + row;
     const frame = frameAtDistance(world, absoluteCell * CELL_DEPTH + CELL_DEPTH * 0.5);
     const y = HEIGHT - (row + 1) * ROW_PX;
-    const aheadCells = (absoluteCell * CELL_DEPTH - playerS) / CELL_DEPTH;
-    const warn = telegraphStrength(aheadCells);
 
     for (let lane = 0; lane < LANES; lane += 1) {
       const x = lane * CELL_PX;
+      const index = row * LANES + lane;
 
       if (frame !== undefined && hasLane(frame.obstacleMask, lane)) {
-        context.fillStyle = `rgba(10, 10, 12, ${String(0.35 + warn * 0.65)})`;
+        context.fillStyle = cubeColorCss(frame.colorIndex, 0.95);
         context.fillRect(x, y, CELL_PX, ROW_PX);
       } else if (frame?.boost?.lane === lane) {
-        context.fillStyle = "rgba(0, 213, 255, 0.8)";
+        context.fillStyle = "rgba(0, 213, 255, 0.9)";
+        context.fillRect(x, y, CELL_PX, ROW_PX);
+      } else if ((telegraph.cube[index] ?? 0) > 0) {
+        context.fillStyle = cubeColorCss(
+          telegraph.colorIndex[index] ?? 0,
+          (telegraph.cube[index] ?? 0) * 0.5,
+        );
+        context.fillRect(x, y, CELL_PX, ROW_PX);
+      } else if ((telegraph.boost[index] ?? 0) > 0) {
+        context.fillStyle = `rgba(0, 213, 255, ${String((telegraph.boost[index] ?? 0) * 0.4)})`;
         context.fillRect(x, y, CELL_PX, ROW_PX);
       }
 

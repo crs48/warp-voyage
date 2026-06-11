@@ -8,7 +8,7 @@ import {
   type Lane,
   type LaneMask,
 } from "../game/coordinates";
-import { createPatternMask, PATTERN_FAMILIES, type PatternFamily } from "./patterns";
+import { createPatternEvent, PATTERN_FAMILIES, type PatternFamily } from "./patterns";
 import { createRng } from "./rng";
 import { generateSafePath } from "./safePath";
 import { validateReachability } from "./validate";
@@ -26,6 +26,8 @@ export type Section = {
   readonly seed: number;
   readonly safePath: readonly Lane[];
   readonly obstacleMasks: readonly LaneMask[];
+  // Palette index per cell; all cubes of one event share a color.
+  readonly cellColors: readonly number[];
   readonly boostCells: readonly BoostCell[];
 };
 
@@ -34,23 +36,26 @@ export type SectionOptions = {
   readonly seed: number;
   readonly startLane: Lane;
   readonly startDistance?: number;
+  // Boost multiplier at generation time: event gaps stretch with it so the
+  // player gets the same reaction time at any speed.
+  readonly speedFactor?: number;
 };
 
 const selectPattern = (id: number): PatternFamily =>
-  PATTERN_FAMILIES[id % PATTERN_FAMILIES.length] ?? "semiRandom";
+  PATTERN_FAMILIES[id % PATTERN_FAMILIES.length] ?? "slalom";
 
-const densityForSection = (id: number): number =>
-  Math.min(0.42, 0.14 + id * 0.025);
+const difficultyForSection = (id: number): number => Math.min(1, id * 0.08);
+
+const safeWidthForSection = (id: number): number =>
+  id < 2 ? 2 : 1;
 
 // The opening stretch of the first section stays empty so a fresh run is
 // never lost before the player has seen a single telegraph.
 const SPAWN_CLEAR_CELLS = 10;
+// Breather at the start of every later section.
+const SECTION_ENTRY_GAP = 3;
 
-const isSpawnZone = (sectionId: number, cellIndex: number): boolean =>
-  sectionId === 0 && cellIndex < SPAWN_CLEAR_CELLS;
-
-const safeWidthForSection = (id: number): number =>
-  id < 2 ? 2 : 1;
+const COLOR_VARIANTS = 6;
 
 const createBoostCells = (safePath: readonly Lane[], sectionId: number): readonly BoostCell[] =>
   [34, 78, 112]
@@ -77,39 +82,60 @@ export const generateSection = ({
   seed,
   startLane,
   startDistance = id * SECTION_LENGTH,
+  speedFactor = 1,
 }: SectionOptions): Section => {
   const pattern = selectPattern(id);
   const maxLaneStep = 1;
   const safeWidth = safeWidthForSection(id);
+  const difficulty = difficultyForSection(id);
+  const pacing = Math.min(4, Math.max(1, speedFactor));
   const rng = createRng(seed + id * 9973);
   const safePath = generateSafePath({
     length: SECTION_CELLS,
     startLane,
     maxLaneStep,
     rng,
-    turnChance: pattern === "line" ? 0.32 : 0.58,
+    turnChance: pattern === "rail" || pattern === "spiral" ? 0.34 : 0.58,
   });
   const boostCells = createBoostCells(safePath, id);
 
-  const obstacleMasks = Array.from({ length: SECTION_CELLS }, (_, cellIndex) => {
-    if (isSpawnZone(id, cellIndex)) {
-      return 0;
-    }
+  const masks = new Array<LaneMask>(SECTION_CELLS).fill(0);
+  const colors = new Array<number>(SECTION_CELLS).fill(0);
+  let cursor = id === 0 ? SPAWN_CLEAR_CELLS : SECTION_ENTRY_GAP;
+  let eventIndex = 0;
 
-    const safeLane = safePath[cellIndex] ?? startLane;
-    const mask = createPatternMask({
+  while (cursor < SECTION_CELLS) {
+    const event = createPatternEvent({
       rng,
       family: pattern,
-      cellIndex,
-      safeLane,
+      eventIndex,
+      safeLanes: safePath.slice(cursor),
       safeWidth,
-      density: densityForSection(id),
-      sectionId: id,
+      difficulty,
+    });
+    const colorIndex = rng.nextInt(0, COLOR_VARIANTS);
+
+    event.masks.forEach((mask, step) => {
+      const cell = cursor + step;
+
+      if (cell >= SECTION_CELLS) {
+        return;
+      }
+
+      const safeLane = safePath[cell] ?? startLane;
+      const placed = mask & ~corridorMask(safeLane, safeWidth);
+      masks[cell] = placed;
+
+      if (placed !== 0) {
+        colors[cell] = colorIndex;
+      }
     });
 
-    return mask & ~corridorMask(safeLane, safeWidth);
-  });
-  const masksWithBoosts = clearBoostLanes(obstacleMasks, boostCells);
+    cursor += event.masks.length + Math.max(1, Math.round(event.gapAfter * pacing));
+    eventIndex += 1;
+  }
+
+  const masksWithBoosts = clearBoostLanes(masks, boostCells);
 
   if (!validateReachability({ masks: masksWithBoosts, startLane, maxStepPerCell: maxLaneStep })) {
     throw new Error(`Generated invalid section ${String(id)}`);
@@ -123,6 +149,7 @@ export const generateSection = ({
     seed,
     safePath,
     obstacleMasks: masksWithBoosts,
+    cellColors: colors,
     boostCells: boostCells.filter(({ cell, lane }) => !hasLane(masksWithBoosts[cell] ?? 0, lane)),
   };
 };

@@ -14,6 +14,29 @@ describe("generateSection", () => {
     expect(patterns).toEqual(PATTERN_FAMILIES);
   });
 
+  it("spaces events further apart when generated at boost speed", () => {
+    const occupiedCells = (speedFactor: number): number =>
+      generateSection({ id: 1, seed: 99, startLane: 0, speedFactor })
+        .obstacleMasks.filter((mask) => mask !== 0).length;
+
+    const atBase = occupiedCells(1);
+    const atMaxBoost = occupiedCells(4);
+
+    expect(atBase).toBeGreaterThan(0);
+    expect(atMaxBoost).toBeGreaterThan(0);
+    expect(atMaxBoost).toBeLessThan(atBase * 0.5);
+  });
+
+  it("assigns shared event colors to occupied cells", () => {
+    const section = generateSection({ id: 3, seed: 99, startLane: 0 });
+    const occupiedColors = section.cellColors.filter(
+      (_, cell) => (section.obstacleMasks[cell] ?? 0) !== 0,
+    );
+
+    expect(occupiedColors.length).toBeGreaterThan(0);
+    expect(new Set(occupiedColors).size).toBeGreaterThan(1);
+  });
+
   it("keeps the safe corridor clear and reachable", () => {
     const sections = Array.from({ length: 12 }, (_, id) =>
       generateSection({ id, seed: 2026, startLane: id % 12 }),

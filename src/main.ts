@@ -1,10 +1,12 @@
 import "./styles.css";
 
+import { BOOST_MULTIPLIERS } from "./game/config";
 import { guidanceAhead, type Guidance } from "./game/guidance";
 import { createRunState, updateRun, type RunState } from "./game/run";
 import { readHighScore, scoreFromDistance } from "./game/scoring";
 import { findSection } from "./game/world";
 import { createInputController } from "./input/controller";
+import { TELEGRAPH_FAR_CELLS } from "./tube/space";
 import { updateCameraRig } from "./render/camera";
 import { createDebugOverlay, updateDebugOverlay } from "./render/debugOverlay";
 import { createHud, updateHud } from "./render/hud";
@@ -75,6 +77,7 @@ window.addEventListener("keydown", () => {
 const renderFrame = (state: RunState, dtSeconds: number): void => {
   const player = state.game.player;
   const section = findSection(state.world, player.distance);
+  const speedFactor = BOOST_MULTIPLIERS[player.boostLevel];
 
   updateTubeView(
     renderScene.tube,
@@ -82,6 +85,7 @@ const renderFrame = (state: RunState, dtSeconds: number): void => {
     player.distance,
     state.bend,
     state.collectedBoosts,
+    speedFactor,
   );
   updateObstacleView(
     renderScene.obstacles,
@@ -105,7 +109,14 @@ const renderFrame = (state: RunState, dtSeconds: number): void => {
     state.crashFlashSeconds,
   );
   renderScene.renderer.render(renderScene.scene, renderScene.cameraRig.camera);
-  updateDebugOverlay(debugOverlay, state.world, player.distance, player.angle);
+  updateDebugOverlay(
+    debugOverlay,
+    state.world,
+    player.distance,
+    player.angle,
+    state.collectedBoosts,
+    Math.round(TELEGRAPH_FAR_CELLS * speedFactor),
+  );
   updateHud(hud, {
     score: scoreFromDistance(player.distance),
     highScore: state.game.highScore,

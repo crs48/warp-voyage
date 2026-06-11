@@ -15,13 +15,13 @@ import {
   LANE_ANGLE,
   LANES,
   TELEGRAPH_FAR_CELLS,
-  TELEGRAPH_NEAR_CELLS,
   VISIBLE_CELLS,
 } from "../tube/space";
 import type { BendParams } from "../tube/centerline";
 import { tubePoint } from "../tube/transform";
-import { hasLane } from "../game/coordinates";
-import { boostKey, frameAtDistance, type World } from "../game/world";
+import { cubeColorFor } from "./palette";
+import { computeTelegraphField } from "./telegraph";
+import type { World } from "../game/world";
 
 export type TubeView = {
   readonly group: Group;
@@ -36,9 +36,8 @@ const PANEL_VERTEX_COUNT = VISIBLE_CELLS * LANES * 6;
 const GRID_SEGMENT_COUNT = (VISIBLE_CELLS + 1) * LANES + VISIBLE_CELLS * LANES;
 const GRID_VERTEX_COUNT = GRID_SEGMENT_COUNT * 2;
 
-const TUBE_WHITE = [0.96, 0.96, 0.95] as const;
-const CUBE_TINT = [0.05, 0.05, 0.06] as const;
-const BOOST_TINT = [0.0, 0.84, 1.0] as const;
+const TUBE_WHITE = { r: 0.96, g: 0.96, b: 0.95 } as const;
+const BOOST_TINT = { r: 0.0, g: 0.84, b: 1.0 } as const;
 
 const scratch = new Vector3();
 
@@ -56,12 +55,12 @@ const writePoint = (
 const writePanelColor = (
   target: Float32Array,
   panelIndex: number,
-  tint: readonly [number, number, number] | typeof TUBE_WHITE,
+  tint: { readonly r: number; readonly g: number; readonly b: number },
   mix: number,
 ): void => {
-  const red = TUBE_WHITE[0] + (tint[0] - TUBE_WHITE[0]) * mix;
-  const green = TUBE_WHITE[1] + (tint[1] - TUBE_WHITE[1]) * mix;
-  const blue = TUBE_WHITE[2] + (tint[2] - TUBE_WHITE[2]) * mix;
+  const red = TUBE_WHITE.r + (tint.r - TUBE_WHITE.r) * mix;
+  const green = TUBE_WHITE.g + (tint.g - TUBE_WHITE.g) * mix;
+  const blue = TUBE_WHITE.b + (tint.b - TUBE_WHITE.b) * mix;
 
   for (let vertex = 0; vertex < 6; vertex += 1) {
     const offset = (panelIndex * 6 + vertex) * 3;
@@ -69,17 +68,6 @@ const writePanelColor = (
     target[offset + 1] = green;
     target[offset + 2] = blue;
   }
-};
-
-const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
-
-// Telegraph strength for a cell whose near edge is `aheadCells` in front of
-// the player: 0 beyond FAR, eased up to 1 at NEAR and closer.
-export const telegraphStrength = (aheadCells: number): number => {
-  const linear = clamp01(
-    (TELEGRAPH_FAR_CELLS - aheadCells) / (TELEGRAPH_FAR_CELLS - TELEGRAPH_NEAR_CELLS),
-  );
-  return linear * linear;
 };
 
 export const createTubeView = (): TubeView => {
@@ -119,38 +107,45 @@ export const updateTubeView = (
   playerS: number,
   bend: BendParams,
   collectedBoosts: ReadonlySet<string>,
+  speedFactor = 1,
 ): void => {
   const baseCell = Math.floor(playerS / CELL_DEPTH);
+  // Faster play needs earlier warnings: the trail horizon stretches with
+  // the boost multiplier, capped just inside the render window.
+  const horizonCells = Math.min(
+    VISIBLE_CELLS - 2,
+    Math.round(TELEGRAPH_FAR_CELLS * speedFactor),
+  );
+  const telegraph = computeTelegraphField(world, baseCell, collectedBoosts, horizonCells);
   let panelOffset = 0;
   let gridOffset = 0;
   let panelIndex = 0;
 
   for (let cellOffset = 0; cellOffset < VISIBLE_CELLS; cellOffset += 1) {
-    const absoluteCell = baseCell + cellOffset;
-    const nearDistance = absoluteCell * CELL_DEPTH;
+    const nearDistance = (baseCell + cellOffset) * CELL_DEPTH;
     const farDistance = nearDistance + CELL_DEPTH;
-    const frame = frameAtDistance(world, nearDistance + CELL_DEPTH * 0.5);
-    const aheadCells = (nearDistance - playerS) / CELL_DEPTH;
-    const warn = telegraphStrength(aheadCells);
-    const boostLane =
-      frame?.boost !== undefined &&
-      !collectedBoosts.has(boostKey(frame.section.id, frame.boost.cell))
-        ? frame.boost.lane
-        : undefined;
 
     for (let lane = 0; lane < LANES; lane += 1) {
       const a0 = lane * LANE_ANGLE;
       const a1 = (lane + 1) * LANE_ANGLE;
 
+      // Two triangles per panel; every point is written immediately because
+      // tubePoint reuses one scratch vector.
       panelOffset = writePoint(
         view.panelPositions,
         panelOffset,
         tubePoint(nearDistance, a0, playerS, bend, undefined, scratch),
       );
-      const p10 = tubePoint(farDistance, a0, playerS, bend, undefined, scratch);
-      panelOffset = writePoint(view.panelPositions, panelOffset, p10);
-      const p11 = tubePoint(farDistance, a1, playerS, bend, undefined, scratch);
-      panelOffset = writePoint(view.panelPositions, panelOffset, p11);
+      panelOffset = writePoint(
+        view.panelPositions,
+        panelOffset,
+        tubePoint(farDistance, a0, playerS, bend, undefined, scratch),
+      );
+      panelOffset = writePoint(
+        view.panelPositions,
+        panelOffset,
+        tubePoint(farDistance, a1, playerS, bend, undefined, scratch),
+      );
       panelOffset = writePoint(
         view.panelPositions,
         panelOffset,
@@ -167,6 +162,7 @@ export const updateTubeView = (
         tubePoint(nearDistance, a1, playerS, bend, undefined, scratch),
       );
 
+      // Ring segment along the cell's near edge…
       gridOffset = writePoint(
         view.gridPositions,
         gridOffset,
@@ -177,17 +173,31 @@ export const updateTubeView = (
         gridOffset,
         tubePoint(nearDistance, a1, playerS, bend, undefined, scratch),
       );
+      // …and the longitudinal segment along the lane edge, so panels read
+      // as squares instead of rings.
       gridOffset = writePoint(
         view.gridPositions,
         gridOffset,
         tubePoint(nearDistance, a0, playerS, bend, undefined, scratch),
       );
-      gridOffset = writePoint(view.gridPositions, gridOffset, p10);
+      gridOffset = writePoint(
+        view.gridPositions,
+        gridOffset,
+        tubePoint(farDistance, a0, playerS, bend, undefined, scratch),
+      );
 
-      if (frame !== undefined && hasLane(frame.obstacleMask, lane)) {
-        writePanelColor(view.panelColors, panelIndex, CUBE_TINT, warn * 0.85);
-      } else if (boostLane === lane) {
-        writePanelColor(view.panelColors, panelIndex, BOOST_TINT, warn * 0.9);
+      const cubeStrength = telegraph.cube[panelIndex] ?? 0;
+      const boostStrength = telegraph.boost[panelIndex] ?? 0;
+
+      if (cubeStrength > 0 && cubeStrength >= boostStrength) {
+        writePanelColor(
+          view.panelColors,
+          panelIndex,
+          cubeColorFor(telegraph.colorIndex[panelIndex] ?? 0),
+          cubeStrength * 0.8,
+        );
+      } else if (boostStrength > 0) {
+        writePanelColor(view.panelColors, panelIndex, BOOST_TINT, boostStrength * 0.9);
       } else {
         writePanelColor(view.panelColors, panelIndex, TUBE_WHITE, 0);
       }

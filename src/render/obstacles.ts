@@ -1,5 +1,6 @@
 import {
   BoxGeometry,
+  Color,
   DynamicDrawUsage,
   Group,
   InstancedMesh,
@@ -19,6 +20,7 @@ import type { BendParams } from "../tube/centerline";
 import { cellTransform } from "../tube/transform";
 import { hasLane } from "../game/coordinates";
 import { boostKey, frameAtDistance, type World } from "../game/world";
+import { CUBE_PALETTE } from "./palette";
 
 export type ObstacleView = {
   readonly group: Group;
@@ -31,10 +33,16 @@ const MAX_CUBES = VISIBLE_CELLS * LANES;
 const MAX_BOOSTS = VISIBLE_CELLS;
 const BOOST_THICKNESS = 0.14;
 
+const PALETTE_COLORS: readonly Color[] = CUBE_PALETTE.map(
+  ({ r, g, b }) => new Color(r, g, b),
+);
+const FALLBACK_COLOR = new Color(0x0a0a0c);
+
 export const createObstacleView = (): ObstacleView => {
   const group = new Group();
   const cubeGeometry = new BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_DEPTH);
-  const cubeMaterial = new MeshBasicMaterial({ color: 0x0a0a0c });
+  // White base; per-instance colors from the palette multiply it.
+  const cubeMaterial = new MeshBasicMaterial({ color: 0xffffff });
   const cubes = new InstancedMesh(cubeGeometry, cubeMaterial, MAX_CUBES);
   cubes.instanceMatrix.setUsage(DynamicDrawUsage);
   cubes.frustumCulled = false;
@@ -108,6 +116,13 @@ export const updateObstacleView = (
         bend,
         CUBE_SIZE / 2 + CUBE_SURFACE_GAP,
       );
+      view.cubes.setColorAt(
+        cubeCount,
+        PALETTE_COLORS[
+          ((frame.colorIndex % PALETTE_COLORS.length) + PALETTE_COLORS.length) %
+            PALETTE_COLORS.length
+        ] ?? FALLBACK_COLOR,
+      );
       cubeCount += 1;
     }
 
@@ -133,5 +148,8 @@ export const updateObstacleView = (
   view.cubes.count = cubeCount;
   view.boosts.count = boostCount;
   view.cubes.instanceMatrix.needsUpdate = true;
+  if (view.cubes.instanceColor !== null) {
+    view.cubes.instanceColor.needsUpdate = true;
+  }
   view.boosts.instanceMatrix.needsUpdate = true;
 };

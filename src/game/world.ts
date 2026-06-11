@@ -22,6 +22,7 @@ export type WorldFrame = {
   readonly section: Section;
   readonly sectionCell: CellIndex;
   readonly obstacleMask: LaneMask;
+  readonly colorIndex: number;
   readonly boost?: BoostCell;
 };
 
@@ -33,7 +34,7 @@ export const createWorld = (seed: number, startLane: Lane): World => ({
   sections: [generateSection({ id: 0, seed, startLane })],
 });
 
-const appendSection = (world: World): World => {
+const appendSection = (world: World, speedFactor: number): World => {
   const last = world.sections.at(-1);
 
   if (last === undefined) {
@@ -47,6 +48,7 @@ const appendSection = (world: World): World => {
     seed: world.seed,
     startLane,
     startDistance: last.endDistance,
+    speedFactor,
   });
 
   return {
@@ -55,7 +57,11 @@ const appendSection = (world: World): World => {
   };
 };
 
-export const ensureWorldAhead = (world: World, distance: number): World => {
+export const ensureWorldAhead = (
+  world: World,
+  distance: number,
+  speedFactor = 1,
+): World => {
   const requiredDistance = distance + VISIBLE_CELLS * 4;
   const last = world.sections.at(-1);
 
@@ -63,7 +69,7 @@ export const ensureWorldAhead = (world: World, distance: number): World => {
     return world;
   }
 
-  return ensureWorldAhead(appendSection(world), distance);
+  return ensureWorldAhead(appendSection(world, speedFactor), distance, speedFactor);
 };
 
 export const trimWorldBehind = (world: World, distance: number): World => ({
@@ -101,6 +107,7 @@ export const frameAtDistance = (
     section,
     sectionCell,
     obstacleMask,
+    colorIndex: section.cellColors[sectionCell] ?? 0,
     ...(boost === undefined ? {} : { boost }),
   };
 };

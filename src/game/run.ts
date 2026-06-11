@@ -3,6 +3,7 @@
 // hands the result to the render layer.
 
 import { resolveCollisionFrame } from "./collision";
+import { BOOST_MULTIPLIERS } from "./config";
 import { maybeUpdateHighScore, scoreFromDistance } from "./scoring";
 import { advancePlayer, createInitialGameState, type GameState } from "./state";
 import {
@@ -45,7 +46,11 @@ export const updateRun = (
 ): RunState => {
   const advancedPlayer = advancePlayer(state.game.player, { steer }, dtSeconds);
   const world = trimWorldBehind(
-    ensureWorldAhead(state.world, advancedPlayer.distance),
+    ensureWorldAhead(
+      state.world,
+      advancedPlayer.distance,
+      BOOST_MULTIPLIERS[advancedPlayer.boostLevel],
+    ),
     advancedPlayer.distance,
   );
   const collisionState = framesNearDistance(world, advancedPlayer.distance).reduce<CollisionPass>(
