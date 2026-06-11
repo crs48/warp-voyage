@@ -27,9 +27,6 @@ export const corridorMask = (centerLane: Lane, width: number): LaneMask =>
 export const invertLaneMask = (mask: LaneMask): LaneMask =>
   ((1 << LANES) - 1) & ~mask;
 
-export const openLaneMask = (blockedMask: LaneMask): LaneMask =>
-  invertLaneMask(blockedMask);
-
 export const lanesFromMask = (mask: LaneMask): readonly Lane[] =>
   Array.from({ length: LANES }, (_, lane) => lane)
     .filter((lane) => hasLane(mask, lane));
@@ -39,19 +36,11 @@ const normalizeAngle = (angle: number): number => {
   return ((angle % fullTurn) + fullTurn) % fullTurn;
 };
 
-export const angularDistance = (first: number, second: number): number => {
-  const fullTurn = Math.PI * 2;
-  const raw = Math.abs(normalizeAngle(first) - normalizeAngle(second));
-  return Math.min(raw, fullTurn - raw);
-};
-
 export const laneFromAngle = (angle: number): Lane =>
   Math.floor(normalizeAngle(angle) / LANE_ANGLE);
 
 export const angleForLane = (lane: Lane): number =>
   (normalizeLane(lane) + 0.5) * LANE_ANGLE;
-
-export const panelCenterAngle = angleForLane;
 
 export const cellFromDistance = (distance: number): CellIndex =>
   Math.max(0, Math.floor(distance / CELL_DEPTH));

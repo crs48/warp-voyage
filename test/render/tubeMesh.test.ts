@@ -21,14 +21,14 @@ const panelLuminance = (
 describe("telegraphStrength", () => {
   it("is silent beyond the horizon and full strength up close", () => {
     expect(telegraphStrength(20)).toBe(0);
-    expect(telegraphStrength(10)).toBe(0);
+    expect(telegraphStrength(14)).toBe(0);
     expect(telegraphStrength(3)).toBe(1);
     expect(telegraphStrength(0)).toBe(1);
   });
 
   it("grows monotonically as the cell approaches", () => {
-    expect(telegraphStrength(8)).toBeGreaterThan(0);
-    expect(telegraphStrength(5)).toBeGreaterThan(telegraphStrength(8));
+    expect(telegraphStrength(10)).toBeGreaterThan(0);
+    expect(telegraphStrength(5)).toBeGreaterThan(telegraphStrength(10));
   });
 });
 

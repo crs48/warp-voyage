@@ -20,8 +20,9 @@ export const PLAYER_HALF_DEPTH = 0.35 * CELL_DEPTH;
 export const PLAYER_HALF_ANGLE = 0.3 * LANE_ANGLE;
 
 // Telegraph: panels tint when their cell is within FAR cells of the player,
-// reaching full strength at NEAR cells out.
-export const TELEGRAPH_FAR_CELLS = 10;
+// reaching full strength at NEAR cells out. 14 cells = 56 units = 2 seconds
+// of warning at base speed.
+export const TELEGRAPH_FAR_CELLS = 14;
 export const TELEGRAPH_NEAR_CELLS = 3;
 
 export type TubeRect = {

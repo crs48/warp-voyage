@@ -5,7 +5,6 @@
 import { MAX_BOOST_LEVEL, POST_CRASH_INVULNERABLE_SECONDS } from "./config";
 import { cellRect, overlaps, playerRect, type TubeRect } from "../tube/space";
 import {
-  cellFromDistance,
   lanesFromMask,
   type CellIndex,
   type Lane,
@@ -83,6 +82,3 @@ export const resolveCollisionFrame = (
     crashed: true,
   };
 };
-
-export const playerCell = (player: Pick<PlayerState, "distance">): number =>
-  cellFromDistance(player.distance);

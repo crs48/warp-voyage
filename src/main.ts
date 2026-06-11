@@ -1,27 +1,15 @@
 import "./styles.css";
 
-import { resolveCollisionFrame } from "./game/collision";
-import { scoreFromDistance, maybeUpdateHighScore, readHighScore } from "./game/scoring";
-import { advancePlayer, createInitialGameState, type GameState } from "./game/state";
-import {
-  boostKey,
-  createWorld,
-  ensureWorldAhead,
-  findSection,
-  frameAtDistance,
-  framesNearDistance,
-  trimWorldBehind,
-  type World,
-} from "./game/world";
-import { lanesFromMask } from "./game/coordinates";
-import { CELL_DEPTH } from "./tube/space";
-import { createInputController, type InputController } from "./input/controller";
-import { createBend, type BendParams } from "./tube/centerline";
+import { guidanceAhead, type Guidance } from "./game/guidance";
+import { createRunState, updateRun, type RunState } from "./game/run";
+import { readHighScore, scoreFromDistance } from "./game/scoring";
+import { findSection } from "./game/world";
+import { createInputController } from "./input/controller";
 import { updateCameraRig } from "./render/camera";
 import { createDebugOverlay, updateDebugOverlay } from "./render/debugOverlay";
-import { createHud, updateHud, type Hud } from "./render/hud";
+import { createHud, updateHud } from "./render/hud";
 import { updateObstacleView } from "./render/obstacles";
-import { createRenderScene, type RenderScene } from "./render/scene";
+import { createRenderScene } from "./render/scene";
 import { updateShipView } from "./render/ship";
 import { updateTubeView } from "./render/tubeMesh";
 
@@ -38,11 +26,7 @@ declare global {
         readonly crashFlashSeconds: number;
         readonly boostLevel: number;
       };
-      readonly getGuidance: () => {
-        readonly safeLane: number;
-        readonly obstacle?: { readonly cell: number; readonly lane: number };
-        readonly boost?: { readonly cell: number; readonly lane: number };
-      };
+      readonly getGuidance: () => Guidance;
       readonly setAngle: (angle: number) => void;
       readonly forceGameOver: () => void;
       readonly restart: () => void;
@@ -56,31 +40,6 @@ if (app === null) {
   throw new Error("Missing #app root element");
 }
 
-type Runtime = {
-  readonly renderScene: RenderScene;
-  readonly hud: Hud;
-  readonly input: InputController;
-};
-
-type RunState = {
-  readonly game: GameState;
-  readonly world: World;
-  readonly bend: BendParams;
-  readonly collectedBoosts: ReadonlySet<string>;
-  readonly crashFlashSeconds: number;
-};
-
-const createRunState = (highScore: number): RunState => {
-  const seed = import.meta.env.MODE === "test" ? 24_681 : Date.now() % 100_000;
-  return {
-    game: createInitialGameState(highScore, seed),
-    world: createWorld(seed, 0),
-    bend: createBend(seed),
-    collectedBoosts: new Set(),
-    crashFlashSeconds: 0,
-  };
-};
-
 app.replaceChildren();
 const canvasHost = document.createElement("div");
 canvasHost.className = "game";
@@ -91,16 +50,18 @@ const debugOverlay = createDebugOverlay(app);
 const renderScene = createRenderScene(canvasHost, {
   preserveDrawingBuffer: import.meta.env.MODE === "test",
 });
-const input = createInputController(
-  hud.gyro,
-  hud.gyroStatus,
-);
-const runtime: Runtime = { renderScene, hud, input };
-let run = createRunState(readHighScore(window.localStorage));
+const input = createInputController(hud.gyro, hud.gyroStatus);
+
+const newRun = (): RunState => {
+  const seed = import.meta.env.MODE === "test" ? 24_681 : Date.now() % 100_000;
+  return createRunState(readHighScore(window.localStorage), seed);
+};
+
+let run = newRun();
 let lastTimeMs: number | undefined;
 
 const restart = (): void => {
-  run = createRunState(readHighScore(window.localStorage));
+  run = newRun();
   lastTimeMs = undefined;
 };
 
@@ -111,117 +72,41 @@ window.addEventListener("keydown", () => {
   }
 });
 
-const updateRun = (state: RunState, dtSeconds: number): RunState => {
-  const advancedPlayer = advancePlayer(
-    state.game.player,
-    { steer: runtime.input.getSteer() },
-    dtSeconds,
-  );
-  const world = trimWorldBehind(
-    ensureWorldAhead(state.world, advancedPlayer.distance),
-    advancedPlayer.distance,
-  );
-  const nearbyFrames = framesNearDistance(world, advancedPlayer.distance);
-  const collisionState = nearbyFrames.reduce<{
-    readonly player: typeof advancedPlayer;
-    readonly collectedBoosts: ReadonlySet<string>;
-    readonly collectedBoost: boolean;
-    readonly crashed: boolean;
-  }>(
-    (current, frame) => {
-      if (current.crashed) {
-        return current;
-      }
-
-      const key =
-        frame.boost === undefined
-          ? undefined
-          : boostKey(frame.section.id, frame.boost.cell);
-      const collision = resolveCollisionFrame(current.player, {
-        cell: frame.absoluteCell,
-        obstacleMask: frame.obstacleMask,
-        ...(frame.boost !== undefined &&
-        key !== undefined &&
-        !current.collectedBoosts.has(key)
-          ? { boostLane: frame.boost.lane }
-          : {}),
-      });
-
-      return {
-        player: collision.player,
-        collectedBoosts:
-          collision.collectedBoost && key !== undefined
-            ? new Set([...current.collectedBoosts, key])
-            : current.collectedBoosts,
-        collectedBoost: current.collectedBoost || collision.collectedBoost,
-        crashed: collision.crashed,
-      };
-    },
-    {
-      player: advancedPlayer,
-      collectedBoosts: state.collectedBoosts,
-      collectedBoost: false,
-      crashed: false,
-    },
-  );
-  const score = scoreFromDistance(collisionState.player.distance);
-  const highScore =
-    collisionState.player.status === "gameOver"
-      ? maybeUpdateHighScore(window.localStorage, score)
-      : Math.max(state.game.highScore, score);
-  const safeDt = Math.min(Math.max(dtSeconds, 0), 0.05);
-
-  return {
-    game: {
-      ...state.game,
-      player: collisionState.player,
-      highScore,
-    },
-    world,
-    bend: state.bend,
-    collectedBoosts: collisionState.collectedBoosts,
-    crashFlashSeconds: collisionState.crashed
-      ? 0.75
-      : Math.max(0, state.crashFlashSeconds - safeDt),
-  };
-};
-
 const renderFrame = (state: RunState, dtSeconds: number): void => {
-  const { renderScene: scene, hud: frameHud } = runtime;
   const player = state.game.player;
   const section = findSection(state.world, player.distance);
 
   updateTubeView(
-    scene.tube,
+    renderScene.tube,
     state.world,
     player.distance,
     state.bend,
     state.collectedBoosts,
   );
   updateObstacleView(
-    scene.obstacles,
+    renderScene.obstacles,
     state.world,
     player.distance,
     state.bend,
     state.collectedBoosts,
   );
   updateCameraRig(
-    scene.cameraRig,
+    renderScene.cameraRig,
     player.angle,
     player.distance,
     state.bend,
     dtSeconds,
   );
   updateShipView(
-    scene.ship,
+    renderScene.ship,
     player.angle,
     player.distance,
     state.bend,
     state.crashFlashSeconds,
   );
-  scene.renderer.render(scene.scene, scene.cameraRig.camera);
+  renderScene.renderer.render(renderScene.scene, renderScene.cameraRig.camera);
   updateDebugOverlay(debugOverlay, state.world, player.distance, player.angle);
-  updateHud(frameHud, {
+  updateHud(hud, {
     score: scoreFromDistance(player.distance),
     highScore: state.game.highScore,
     pattern: section?.pattern ?? "semiRandom",
@@ -235,7 +120,7 @@ renderScene.renderer.setAnimationLoop((timeMs: number) => {
     lastTimeMs === undefined ? 0 : (timeMs - lastTimeMs) / 1_000;
   lastTimeMs = timeMs;
 
-  run = updateRun(run, dtSeconds);
+  run = updateRun(run, input.getSteer(), dtSeconds, window.localStorage);
   renderFrame(run, dtSeconds);
 });
 
@@ -251,54 +136,8 @@ if (import.meta.env.MODE === "test") {
         crashFlashSeconds: run.crashFlashSeconds,
         boostLevel: run.game.player.boostLevel,
       }),
-      getGuidance: () => {
-        const playerCellIndex = Math.floor(run.game.player.distance / CELL_DEPTH);
-        const ahead = Array.from({ length: 24 }, (_, index) => playerCellIndex + 1 + index)
-          .map((cell) => ({
-            cell,
-            frame: frameAtDistance(run.world, cell * CELL_DEPTH + CELL_DEPTH * 0.5),
-          }));
-        const obstacleEntry = ahead.find(
-          ({ frame }) => frame !== undefined && frame.obstacleMask !== 0,
-        );
-        const obstacleLane =
-          obstacleEntry?.frame === undefined
-            ? undefined
-            : lanesFromMask(obstacleEntry.frame.obstacleMask)[0];
-        // A boost is only offered as a target when its lane is unblocked the
-        // whole way there, so a scripted driver can beeline to it safely.
-        const boostEntry = ahead.find(
-          ({ cell, frame }) =>
-            frame?.boost !== undefined &&
-            !run.collectedBoosts.has(boostKey(frame.section.id, frame.boost.cell)) &&
-            ahead
-              .filter((candidate) => candidate.cell <= cell)
-              .every(
-                ({ frame: between }) =>
-                  between === undefined ||
-                  frame.boost === undefined ||
-                  (between.obstacleMask & (1 << frame.boost.lane)) === 0,
-              ),
-        );
-        // The next cell's safe lane: with maxLaneStep 1, it always sits
-        // inside the current cell's cleared corridor too, so a teleporting
-        // driver can snap straight to it.
-        const safeFrame = ahead[0]?.frame;
-        const safeLane =
-          safeFrame?.section.safePath[
-            Math.min(safeFrame.sectionCell, safeFrame.section.safePath.length - 1)
-          ] ?? 0;
-
-        return {
-          safeLane,
-          ...(obstacleEntry !== undefined && obstacleLane !== undefined
-            ? { obstacle: { cell: obstacleEntry.cell, lane: obstacleLane } }
-            : {}),
-          ...(boostEntry?.frame?.boost === undefined
-            ? {}
-            : { boost: { cell: boostEntry.cell, lane: boostEntry.frame.boost.lane } }),
-        };
-      },
+      getGuidance: () =>
+        guidanceAhead(run.world, run.game.player.distance, run.collectedBoosts),
       setAngle: (angle: number) => {
         run = {
           ...run,

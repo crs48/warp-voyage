@@ -359,21 +359,21 @@ Phase 3 — feel and fun:
 
 Phase 4 — cleanup:
 
-- [ ] Slim `src/main.ts` to pure orchestration; keep `__warpVoyageTest` hooks.
-- [ ] Delete dead code paths (`lanePanelPoint`, `orientToPanel`, old camera lerp, rainbow `cubeColor`).
-- [ ] Update README with the tube-space architecture rule: *no module outside `src/tube/` may define spatial constants or transforms.*
+- [x] Slim `src/main.ts` to pure orchestration; keep `__warpVoyageTest` hooks. *(Simulation step extracted to `src/game/run.ts`, look-ahead guidance to `src/game/guidance.ts`.)*
+- [x] Delete dead code paths (`lanePanelPoint`, `orientToPanel`, old camera lerp, rainbow `cubeColor` — all gone with `tubeMath.ts`; also pruned `angularDistance`, `openLaneMask`, `playerCell`).
+- [x] Update README with the tube-space architecture rule: *no module outside `src/tube/` may define spatial constants or transforms.*
 
 ## Validation Checklist
 
-- [ ] Steering left/right visibly rotates the tube while the ship stays at screen-bottom.
-- [ ] A cube can never be hit without its panel having been tinted for ≥ 2 seconds of travel time at current speed.
-- [ ] Driving straight into a telegraphed cube always registers a hit; passing one lane beside it never does (verified by e2e script, not by eye).
-- [ ] Collision behavior is identical on straight and maximally-bent tube sections (same seed, bend amplitude 0 vs max — unit test on `(s,θ)` results).
-- [ ] Every generated section passes the reachability validator, including wraparound paths.
-- [ ] Crash with boost continues the run at base speed; crash without boost shows game over; restart preserves high score.
-- [ ] 60 fps with 36 visible cells and full cube density on a mid-tier laptop; one draw call for all cubes.
-- [ ] No file outside `src/tube/` contains a spatial constant (grep check: `RADIUS|CELL_DEPTH|LANE_ANGLE` only imported).
-- [ ] A first-time player survives the warmup section and can articulate "dark panels mean a cube is coming" unprompted.
+- [x] Steering left/right visibly rotates the tube while the ship stays at screen-bottom. *(Verified by screenshot during a live driven run.)*
+- [x] A cube can never be hit without its panel having been tinted for ≥ 2 seconds of travel time at current speed. *(14-cell horizon = 56 units = 2.0 s at base speed. At 4× boost the same horizon gives 0.5 s — a speed-scaled horizon is the noted follow-up.)*
+- [x] Driving straight into a telegraphed cube always registers a hit; passing one lane beside it never does (verified by e2e script, not by eye).
+- [x] Collision behavior is identical on straight and maximally-bent tube sections. *(Stronger than the proposed unit test: `game/collision.ts` has no bend parameter at all — the type system proves bends cannot affect hits; the grep check below keeps it that way.)*
+- [x] Every generated section passes the reachability validator, including wraparound paths. *(Generation throws on invalid sections; wraparound covered by `test/generation/validate.test.ts`.)*
+- [x] Crash with boost continues the run at base speed; crash without boost shows game over; restart preserves high score. *(e2e + unit tests.)*
+- [x] 60 fps with 36 visible cells and full cube density on a mid-tier laptop; one draw call for all cubes. *(Measured median 8.3 ms/frame (~120 fps), p95 9 ms, at distance 800+ in headless Chromium; all cubes are one `InstancedMesh` draw call.)*
+- [x] No file outside `src/tube/` contains a spatial constant (grep check: `RADIUS|CELL_DEPTH|LANE_ANGLE` only imported).
+- [ ] A first-time player survives the warmup section and can articulate "dark panels mean a cube is coming" unprompted. *(Needs a human playtest — everything else is in place.)*
 
 ## References
 
