@@ -1,6 +1,6 @@
 # MVP Rebuild Around A Tube-Space Core
 
-Status: `[_]`
+Status: `[x]`
 Date: 2026-06-10
 Scope: rethink the buggy MVP from first principles; decide rewrite-vs-refactor; define the spatial model, telegraphing, camera, and collision contract that make the game feel correct and fun.
 
