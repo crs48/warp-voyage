@@ -1,28 +1,24 @@
 import {
   BoxGeometry,
-  Color,
   DynamicDrawUsage,
   Group,
   InstancedMesh,
-  Matrix4,
   MeshBasicMaterial,
   Object3D,
-  Vector3,
 } from "three";
 
 import {
   CELL_DEPTH,
+  CUBE_DEPTH,
+  CUBE_SIZE,
+  CUBE_SURFACE_GAP,
   LANES,
-  OBSTACLE_CUBE_SIZE,
   VISIBLE_CELLS,
-} from "../game/config";
-import { hasLane, panelCenterAngle } from "../game/coordinates";
-import { frameAtDistance, type World } from "../game/world";
-import {
-  inwardForAngle,
-  lanePanelPoint,
-  tangentForAngle,
-} from "./tubeMath";
+} from "../tube/space";
+import type { BendParams } from "../tube/centerline";
+import { cellTransform } from "../tube/transform";
+import { hasLane } from "../game/coordinates";
+import { boostKey, frameAtDistance, type World } from "../game/world";
 
 export type ObstacleView = {
   readonly group: Group;
@@ -33,31 +29,25 @@ export type ObstacleView = {
 
 const MAX_CUBES = VISIBLE_CELLS * LANES;
 const MAX_BOOSTS = VISIBLE_CELLS;
-const CUBE_WIDTH = OBSTACLE_CUBE_SIZE;
-const CUBE_HEIGHT = OBSTACLE_CUBE_SIZE;
-const CUBE_DEPTH = OBSTACLE_CUBE_SIZE;
-const CUBE_SURFACE_GAP = 0.03;
-const BOOST_SURFACE_GAP = 0.05;
-
-const cubeColor = (sectionId: number, cell: number, lane: number): Color => {
-  const hue = ((sectionId * 47 + cell * 7 + lane * 29) % 360) / 360;
-  return new Color().setHSL(hue, 0.78, 0.54);
-};
-
-export const boostKey = (sectionId: number, cell: number): string =>
-  `${String(sectionId)}:${String(cell)}`;
+const BOOST_THICKNESS = 0.14;
 
 export const createObstacleView = (): ObstacleView => {
   const group = new Group();
-  const cubeGeometry = new BoxGeometry(CUBE_WIDTH, CUBE_DEPTH, CUBE_HEIGHT);
-  const cubeMaterial = new MeshBasicMaterial({ vertexColors: true });
+  const cubeGeometry = new BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_DEPTH);
+  const cubeMaterial = new MeshBasicMaterial({ color: 0x0a0a0c });
   const cubes = new InstancedMesh(cubeGeometry, cubeMaterial, MAX_CUBES);
   cubes.instanceMatrix.setUsage(DynamicDrawUsage);
+  cubes.frustumCulled = false;
 
-  const boostGeometry = new BoxGeometry(2.05, 0.16, 2.05);
+  const boostGeometry = new BoxGeometry(
+    CUBE_SIZE * 0.72,
+    BOOST_THICKNESS,
+    CELL_DEPTH * 0.55,
+  );
   const boostMaterial = new MeshBasicMaterial({ color: 0x00d5ff });
   const boosts = new InstancedMesh(boostGeometry, boostMaterial, MAX_BOOSTS);
   boosts.instanceMatrix.setUsage(DynamicDrawUsage);
+  boosts.frustumCulled = false;
 
   group.add(cubes, boosts);
 
@@ -69,48 +59,35 @@ export const createObstacleView = (): ObstacleView => {
   };
 };
 
-const orientToPanel = (
-  dummy: Object3D,
-  lane: number,
-  distanceAxisScale = 1,
-): void => {
-  const angle = panelCenterAngle(lane);
-  const tangent = tangentForAngle(angle);
-  const inward = inwardForAngle(angle);
-  const forward = new Vector3(0, 0, -1);
-  const basis = new Matrix4().makeBasis(tangent, inward, forward);
-
-  dummy.quaternion.setFromRotationMatrix(basis);
-  dummy.scale.set(1, 1, distanceAxisScale);
-};
-
-const setInstance = (
+const placeInstance = (
   mesh: InstancedMesh,
   index: number,
-  matrix: Matrix4,
-  color?: Color,
+  dummy: Object3D,
+  cell: number,
+  lane: number,
+  playerS: number,
+  bend: BendParams,
+  radialInset: number,
 ): void => {
-  mesh.setMatrixAt(index, matrix);
-
-  if (color !== undefined) {
-    mesh.setColorAt(index, color);
-  }
+  cellTransform(cell, lane, playerS, bend, radialInset, dummy.position, dummy.quaternion);
+  dummy.updateMatrix();
+  mesh.setMatrixAt(index, dummy.matrix);
 };
 
 export const updateObstacleView = (
   view: ObstacleView,
   world: World,
-  distance: number,
+  playerS: number,
+  bend: BendParams,
   collectedBoosts: ReadonlySet<string>,
 ): void => {
-  const baseCell = Math.floor(distance / CELL_DEPTH);
+  const baseCell = Math.floor(playerS / CELL_DEPTH);
   let cubeCount = 0;
   let boostCount = 0;
 
   for (let offset = 0; offset <= VISIBLE_CELLS; offset += 1) {
     const absoluteCell = baseCell + offset;
-    const cellDistance = absoluteCell * CELL_DEPTH + CELL_DEPTH * 0.5;
-    const frame = frameAtDistance(world, cellDistance);
+    const frame = frameAtDistance(world, absoluteCell * CELL_DEPTH + CELL_DEPTH * 0.5);
 
     if (frame === undefined) {
       continue;
@@ -121,21 +98,15 @@ export const updateObstacleView = (
         continue;
       }
 
-      const position = lanePanelPoint(
-        absoluteCell,
-        lane,
-        distance,
-        CUBE_DEPTH / 2 + CUBE_SURFACE_GAP,
-      );
-      view.dummy.position.copy(position);
-      orientToPanel(view.dummy, lane);
-      view.dummy.updateMatrix();
-
-      setInstance(
+      placeInstance(
         view.cubes,
         cubeCount,
-        view.dummy.matrix,
-        cubeColor(frame.section.id, frame.sectionCell, lane),
+        view.dummy,
+        absoluteCell,
+        lane,
+        playerS,
+        bend,
+        CUBE_SIZE / 2 + CUBE_SURFACE_GAP,
       );
       cubeCount += 1;
     }
@@ -145,16 +116,16 @@ export const updateObstacleView = (
       boostCount < MAX_BOOSTS &&
       !collectedBoosts.has(boostKey(frame.section.id, frame.boost.cell))
     ) {
-      const position = lanePanelPoint(
+      placeInstance(
+        view.boosts,
+        boostCount,
+        view.dummy,
         absoluteCell,
         frame.boost.lane,
-        distance,
-        BOOST_SURFACE_GAP,
+        playerS,
+        bend,
+        BOOST_THICKNESS / 2 + CUBE_SURFACE_GAP,
       );
-      view.dummy.position.copy(position);
-      orientToPanel(view.dummy, frame.boost.lane, 0.72);
-      view.dummy.updateMatrix();
-      setInstance(view.boosts, boostCount, view.dummy.matrix);
       boostCount += 1;
     }
   }
@@ -162,9 +133,5 @@ export const updateObstacleView = (
   view.cubes.count = cubeCount;
   view.boosts.count = boostCount;
   view.cubes.instanceMatrix.needsUpdate = true;
-  view.cubes.instanceColor?.setUsage(DynamicDrawUsage);
-  if (view.cubes.instanceColor !== null) {
-    view.cubes.instanceColor.needsUpdate = true;
-  }
   view.boosts.instanceMatrix.needsUpdate = true;
 };

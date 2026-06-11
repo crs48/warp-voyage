@@ -1,6 +1,6 @@
 import { Scene, WebGLRenderer } from "three";
 
-import { createCamera } from "./camera";
+import { createCameraRig, type CameraRig } from "./camera";
 import { createObstacleView } from "./obstacles";
 import { createShipView } from "./ship";
 import { createTubeView } from "./tubeMesh";
@@ -8,7 +8,7 @@ import { createTubeView } from "./tubeMesh";
 export type RenderScene = {
   readonly renderer: WebGLRenderer;
   readonly scene: Scene;
-  readonly camera: ReturnType<typeof createCamera>;
+  readonly cameraRig: CameraRig;
   readonly tube: ReturnType<typeof createTubeView>;
   readonly obstacles: ReturnType<typeof createObstacleView>;
   readonly ship: ReturnType<typeof createShipView>;
@@ -34,15 +34,15 @@ export const createRenderScene = (
   host.append(renderer.domElement);
 
   const scene = new Scene();
-  const camera = createCamera();
+  const cameraRig = createCameraRig();
   const tube = createTubeView();
   const obstacles = createObstacleView();
   const ship = createShipView();
   scene.add(tube.group, obstacles.group, ship.group);
 
   const resize = (): void => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+    cameraRig.camera.aspect = window.innerWidth / window.innerHeight;
+    cameraRig.camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
   };
@@ -52,7 +52,7 @@ export const createRenderScene = (
   return {
     renderer,
     scene,
-    camera,
+    cameraRig,
     tube,
     obstacles,
     ship,

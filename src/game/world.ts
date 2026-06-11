@@ -25,6 +25,9 @@ export type WorldFrame = {
   readonly boost?: BoostCell;
 };
 
+export const boostKey = (sectionId: number, cell: CellIndex): string =>
+  `${String(sectionId)}:${String(cell)}`;
+
 export const createWorld = (seed: number, startLane: Lane): World => ({
   seed,
   sections: [generateSection({ id: 0, seed, startLane })],

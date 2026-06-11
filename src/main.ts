@@ -4,6 +4,7 @@ import { resolveCollisionFrame } from "./game/collision";
 import { scoreFromDistance, maybeUpdateHighScore, readHighScore } from "./game/scoring";
 import { advancePlayer, createInitialGameState, type GameState } from "./game/state";
 import {
+  boostKey,
   createWorld,
   ensureWorldAhead,
   findSection,
@@ -12,9 +13,10 @@ import {
   type World,
 } from "./game/world";
 import { createInputController, type InputController } from "./input/controller";
-import { updateCamera } from "./render/camera";
+import { createBend, type BendParams } from "./tube/centerline";
+import { updateCameraRig } from "./render/camera";
 import { createHud, updateHud, type Hud } from "./render/hud";
-import { boostKey, updateObstacleView } from "./render/obstacles";
+import { updateObstacleView } from "./render/obstacles";
 import { createRenderScene, type RenderScene } from "./render/scene";
 import { updateShipView } from "./render/ship";
 import { updateTubeView } from "./render/tubeMesh";
@@ -52,6 +54,7 @@ type Runtime = {
 type RunState = {
   readonly game: GameState;
   readonly world: World;
+  readonly bend: BendParams;
   readonly collectedBoosts: ReadonlySet<string>;
   readonly crashFlashSeconds: number;
 };
@@ -61,6 +64,7 @@ const createRunState = (highScore: number): RunState => {
   return {
     game: createInitialGameState(highScore, seed),
     world: createWorld(seed, 0),
+    bend: createBend(seed),
     collectedBoosts: new Set(),
     crashFlashSeconds: 0,
   };
@@ -162,6 +166,7 @@ const updateRun = (state: RunState, dtSeconds: number): RunState => {
       highScore,
     },
     world,
+    bend: state.bend,
     collectedBoosts: collisionState.collectedBoosts,
     crashFlashSeconds: collisionState.crashed
       ? 0.75
@@ -169,21 +174,40 @@ const updateRun = (state: RunState, dtSeconds: number): RunState => {
   };
 };
 
-const renderFrame = (state: RunState): void => {
+const renderFrame = (state: RunState, dtSeconds: number): void => {
   const { renderScene: scene, hud: frameHud } = runtime;
   const player = state.game.player;
   const section = findSection(state.world, player.distance);
 
-  updateTubeView(scene.tube, player.distance);
+  updateTubeView(
+    scene.tube,
+    state.world,
+    player.distance,
+    state.bend,
+    state.collectedBoosts,
+  );
   updateObstacleView(
     scene.obstacles,
     state.world,
     player.distance,
+    state.bend,
     state.collectedBoosts,
   );
-  updateCamera(scene.camera, player.angle);
-  updateShipView(scene.ship, player.angle, state.crashFlashSeconds);
-  scene.renderer.render(scene.scene, scene.camera);
+  updateCameraRig(
+    scene.cameraRig,
+    player.angle,
+    player.distance,
+    state.bend,
+    dtSeconds,
+  );
+  updateShipView(
+    scene.ship,
+    player.angle,
+    player.distance,
+    state.bend,
+    state.crashFlashSeconds,
+  );
+  scene.renderer.render(scene.scene, scene.cameraRig.camera);
   updateHud(frameHud, {
     score: scoreFromDistance(player.distance),
     highScore: state.game.highScore,
@@ -199,7 +223,7 @@ renderScene.renderer.setAnimationLoop((timeMs: number) => {
   lastTimeMs = timeMs;
 
   run = updateRun(run, dtSeconds);
-  renderFrame(run);
+  renderFrame(run, dtSeconds);
 });
 
 if (import.meta.env.MODE === "test") {
@@ -225,7 +249,7 @@ if (import.meta.env.MODE === "test") {
           },
           crashFlashSeconds: 0.75,
         };
-        renderFrame(run);
+        renderFrame(run, 0);
       },
       restart,
     },

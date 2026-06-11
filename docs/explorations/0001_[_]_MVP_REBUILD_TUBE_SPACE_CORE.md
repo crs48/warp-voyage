@@ -343,11 +343,11 @@ Phase 1 — spatial core (game may be temporarily headless):
 
 Phase 2 — render against the core:
 
-- [ ] Rewrite `src/render/tubeMesh.ts` from `cellTransform` corners with a per-vertex `color` attribute (`vertexColors: true`); white panels, near-black grid lines.
-- [ ] Rewrite `src/render/obstacles.ts` to set instance matrices directly from `cellTransform`; cubes flat black; boosts cyan; zero-scale hidden instances.
-- [ ] Add telegraph tinting in the mesh update from the same masks collision reads (horizon 10 cells, eased ramp).
-- [ ] Rewrite `src/render/camera.ts`: position on centerline behind player `s`, up-vector = player's outward radial (damped), look-at centerline ahead (~14 units). Player ship renders fixed at screen-bottom.
-- [ ] Restyle `src/render/ship.ts` minimal (small wedge, monochrome accent).
+- [x] Rewrite `src/render/tubeMesh.ts` from `cellTransform` corners with a per-vertex `color` attribute (`vertexColors: true`); white panels, near-black grid lines.
+- [x] Rewrite `src/render/obstacles.ts` to set instance matrices directly from `cellTransform`; cubes flat black; boosts cyan; zero-scale hidden instances. *(Hidden instances are culled via `InstancedMesh.count` rather than zero-scaling — same effect, fewer matrix writes.)*
+- [x] Add telegraph tinting in the mesh update from the same masks collision reads (horizon 10 cells, eased ramp).
+- [x] Rewrite `src/render/camera.ts`: position on centerline behind player `s`, up-vector = player's outward radial (damped), look-at centerline ahead (~14 units). Player ship renders fixed at screen-bottom.
+- [x] Restyle `src/render/ship.ts` minimal (small wedge, monochrome accent).
 
 Phase 3 — feel and fun:
 
