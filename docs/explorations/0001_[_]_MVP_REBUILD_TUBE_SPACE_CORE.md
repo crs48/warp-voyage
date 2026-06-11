@@ -351,11 +351,11 @@ Phase 2 — render against the core:
 
 Phase 3 — feel and fun:
 
-- [ ] Crank section bend parameters: dramatic undulation with curvature caps during wall/spiral patterns.
-- [ ] Tune player half-extents with a tube-space debug overlay (toggle key).
-- [ ] Verify boost rules end-to-end: pickup → speed tier → crash strips boost with i-frames → boostless crash ends run.
-- [ ] Tune steering speed vs. cell depth so a 1-lane dodge at base speed needs ~2 cells of warning (this is what the telegraph horizon must cover at max boost too).
-- [ ] e2e: scripted run that steers into a telegraphed cube and asserts crash; scripted dodge that asserts survival; screenshot assertion that a telegraphed panel is darker than a clean panel.
+- [x] Crank section bend parameters: dramatic undulation with curvature caps during wall/spiral patterns. *(Bend amplitudes raised ~4× over the old weave (12/5 + 8/4 units, 150–400-unit wavelengths) with a smoothstep warmup ramp; the cap is global via amplitude/wavelength bounds rather than per-pattern, since the world-seeded bend stays continuous across section boundaries.)*
+- [x] Tune player half-extents with a tube-space debug overlay (toggle key `h` — draws the (s, θ) grid, telegraph shading, boosts, and the player rect collision actually tests).
+- [x] Verify boost rules end-to-end: pickup → speed tier → crash strips boost with i-frames → boostless crash ends run. *(e2e: "boost shields one crash, then a boostless crash ends the run".)*
+- [x] Tune steering speed vs. cell depth so a 1-lane dodge at base speed needs ~2 cells of warning (4.8 lanes/s at 28 u/s = 1.46 cells per lane change; 10-cell horizon covers a dodge at 4× boost with ~70% margin).
+- [x] e2e: scripted run that steers into a telegraphed cube and asserts crash; scripted dodge that asserts survival; screenshot assertion that a telegraphed panel is darker than a clean panel. *(The darkness assertion is a unit test on the panel color buffer (`test/render/tubeMesh.test.ts`) rather than a screenshot — same property, no pixel-sampling flakiness. Also added: spawn-safe first 10 cells so a fresh run can't be lost before the first telegraph.)*
 
 Phase 4 — cleanup:
 

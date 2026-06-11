@@ -42,6 +42,13 @@ const selectPattern = (id: number): PatternFamily =>
 const densityForSection = (id: number): number =>
   Math.min(0.42, 0.14 + id * 0.025);
 
+// The opening stretch of the first section stays empty so a fresh run is
+// never lost before the player has seen a single telegraph.
+const SPAWN_CLEAR_CELLS = 10;
+
+const isSpawnZone = (sectionId: number, cellIndex: number): boolean =>
+  sectionId === 0 && cellIndex < SPAWN_CLEAR_CELLS;
+
 const safeWidthForSection = (id: number): number =>
   id < 2 ? 2 : 1;
 
@@ -85,6 +92,10 @@ export const generateSection = ({
   const boostCells = createBoostCells(safePath, id);
 
   const obstacleMasks = Array.from({ length: SECTION_CELLS }, (_, cellIndex) => {
+    if (isSpawnZone(id, cellIndex)) {
+      return 0;
+    }
+
     const safeLane = safePath[cellIndex] ?? startLane;
     const mask = createPatternMask({
       rng,

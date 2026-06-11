@@ -8,13 +8,17 @@ import {
   createWorld,
   ensureWorldAhead,
   findSection,
+  frameAtDistance,
   framesNearDistance,
   trimWorldBehind,
   type World,
 } from "./game/world";
+import { lanesFromMask } from "./game/coordinates";
+import { CELL_DEPTH } from "./tube/space";
 import { createInputController, type InputController } from "./input/controller";
 import { createBend, type BendParams } from "./tube/centerline";
 import { updateCameraRig } from "./render/camera";
+import { createDebugOverlay, updateDebugOverlay } from "./render/debugOverlay";
 import { createHud, updateHud, type Hud } from "./render/hud";
 import { updateObstacleView } from "./render/obstacles";
 import { createRenderScene, type RenderScene } from "./render/scene";
@@ -32,7 +36,14 @@ declare global {
         readonly status: string;
         readonly scoreText: string;
         readonly crashFlashSeconds: number;
+        readonly boostLevel: number;
       };
+      readonly getGuidance: () => {
+        readonly safeLane: number;
+        readonly obstacle?: { readonly cell: number; readonly lane: number };
+        readonly boost?: { readonly cell: number; readonly lane: number };
+      };
+      readonly setAngle: (angle: number) => void;
       readonly forceGameOver: () => void;
       readonly restart: () => void;
     };
@@ -76,6 +87,7 @@ canvasHost.className = "game";
 app.append(canvasHost);
 
 const hud = createHud(app);
+const debugOverlay = createDebugOverlay(app);
 const renderScene = createRenderScene(canvasHost, {
   preserveDrawingBuffer: import.meta.env.MODE === "test",
 });
@@ -208,6 +220,7 @@ const renderFrame = (state: RunState, dtSeconds: number): void => {
     state.crashFlashSeconds,
   );
   scene.renderer.render(scene.scene, scene.cameraRig.camera);
+  updateDebugOverlay(debugOverlay, state.world, player.distance, player.angle);
   updateHud(frameHud, {
     score: scoreFromDistance(player.distance),
     highScore: state.game.highScore,
@@ -236,7 +249,65 @@ if (import.meta.env.MODE === "test") {
         status: run.game.player.status,
         scoreText: hud.score.textContent,
         crashFlashSeconds: run.crashFlashSeconds,
+        boostLevel: run.game.player.boostLevel,
       }),
+      getGuidance: () => {
+        const playerCellIndex = Math.floor(run.game.player.distance / CELL_DEPTH);
+        const ahead = Array.from({ length: 24 }, (_, index) => playerCellIndex + 1 + index)
+          .map((cell) => ({
+            cell,
+            frame: frameAtDistance(run.world, cell * CELL_DEPTH + CELL_DEPTH * 0.5),
+          }));
+        const obstacleEntry = ahead.find(
+          ({ frame }) => frame !== undefined && frame.obstacleMask !== 0,
+        );
+        const obstacleLane =
+          obstacleEntry?.frame === undefined
+            ? undefined
+            : lanesFromMask(obstacleEntry.frame.obstacleMask)[0];
+        // A boost is only offered as a target when its lane is unblocked the
+        // whole way there, so a scripted driver can beeline to it safely.
+        const boostEntry = ahead.find(
+          ({ cell, frame }) =>
+            frame?.boost !== undefined &&
+            !run.collectedBoosts.has(boostKey(frame.section.id, frame.boost.cell)) &&
+            ahead
+              .filter((candidate) => candidate.cell <= cell)
+              .every(
+                ({ frame: between }) =>
+                  between === undefined ||
+                  frame.boost === undefined ||
+                  (between.obstacleMask & (1 << frame.boost.lane)) === 0,
+              ),
+        );
+        // The next cell's safe lane: with maxLaneStep 1, it always sits
+        // inside the current cell's cleared corridor too, so a teleporting
+        // driver can snap straight to it.
+        const safeFrame = ahead[0]?.frame;
+        const safeLane =
+          safeFrame?.section.safePath[
+            Math.min(safeFrame.sectionCell, safeFrame.section.safePath.length - 1)
+          ] ?? 0;
+
+        return {
+          safeLane,
+          ...(obstacleEntry !== undefined && obstacleLane !== undefined
+            ? { obstacle: { cell: obstacleEntry.cell, lane: obstacleLane } }
+            : {}),
+          ...(boostEntry?.frame?.boost === undefined
+            ? {}
+            : { boost: { cell: boostEntry.cell, lane: boostEntry.frame.boost.lane } }),
+        };
+      },
+      setAngle: (angle: number) => {
+        run = {
+          ...run,
+          game: {
+            ...run.game,
+            player: { ...run.game.player, angle },
+          },
+        };
+      },
       forceGameOver: () => {
         run = {
           ...run,
