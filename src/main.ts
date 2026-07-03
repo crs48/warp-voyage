@@ -98,6 +98,7 @@ const renderFrame = (state: RunState, dtSeconds: number): void => {
     player.distance,
     state.bend,
     state.collectedBoosts,
+    state.impacts,
   );
   updateCameraRig(
     renderScene.cameraRig,
@@ -116,8 +117,11 @@ const renderFrame = (state: RunState, dtSeconds: number): void => {
   updateParticleSystem(renderScene.particles, {
     bend: state.bend,
     playerS: player.distance,
+    playerAngle: player.angle,
+    speedFactor,
     timeSeconds: elapsedSeconds,
     pixelRatio: renderScene.renderer.getPixelRatio(),
+    impacts: state.impacts,
   });
   renderScene.renderer.render(renderScene.scene, renderScene.cameraRig.camera);
   updateDebugOverlay(

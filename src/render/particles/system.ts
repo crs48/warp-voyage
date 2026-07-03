@@ -5,10 +5,13 @@
 import type { Points } from "three";
 
 import { STRAIGHT_BEND, type BendParams } from "../../tube/centerline";
+import type { RippleImpact } from "../../game/impacts";
 import { createPointSkin } from "./pointSkin";
 import {
   createParticleUniforms,
+  setImpactUniforms,
   setParticleBend,
+  setParticleShip,
   updateParticleUniforms,
   type ParticleUniforms,
 } from "./uniforms";
@@ -29,8 +32,11 @@ export const createParticleSystem = (pixelRatio: number): ParticleSystem => {
 export type ParticleUpdate = {
   readonly bend: BendParams;
   readonly playerS: number;
+  readonly playerAngle: number;
+  readonly speedFactor: number;
   readonly timeSeconds: number;
   readonly pixelRatio: number;
+  readonly impacts: readonly RippleImpact[];
 };
 
 export const updateParticleSystem = (
@@ -47,4 +53,10 @@ export const updateParticleSystem = (
     playerS: update.playerS,
     pixelRatio: update.pixelRatio,
   });
+  setParticleShip(system.uniforms, {
+    s: update.playerS,
+    theta: update.playerAngle,
+    speed: update.speedFactor,
+  });
+  setImpactUniforms(system.uniforms, update.impacts);
 };

@@ -56,7 +56,8 @@ ${DISPLACE_GLSL}
 void main(){
   vec3 anchor = tubeAnchor(aWinS, aTheta);
   vec3 inward = inwardFor(aTheta);
-  vec3 displaced = displace(anchor, inward, aSeed);
+  float sTube = uBaseCellS + aWinS;
+  vec3 displaced = displace(anchor, inward, sTube, aTheta, aSeed);
 
   vec4 mvPosition = modelViewMatrix * vec4(displaced, 1.0);
   gl_Position = projectionMatrix * mvPosition;

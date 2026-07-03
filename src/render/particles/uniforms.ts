@@ -9,6 +9,15 @@ import { Color } from "three";
 import { CELL_DEPTH, TUBE_RADIUS } from "../../tube/space";
 import type { BendParams } from "../../tube/centerline";
 import {
+  IMPACT_AMPLITUDE,
+  IMPACT_FALLOFF,
+  IMPACT_FREQUENCY,
+  IMPACT_LIFETIME_SECONDS,
+  IMPACT_SPEED,
+  MAX_IMPACTS,
+  type RippleImpact,
+} from "../../game/impacts";
+import {
   BEND_RAMP_DISTANCE,
   bendToUniformArrays,
 } from "./anchor";
@@ -23,6 +32,7 @@ const VIB_DRIFT = 0.5;
 const POINT_SIZE = 46;
 const PARTICLE_COLOR = new Color(0.04, 0.04, 0.05);
 const PARTICLE_OPACITY = 0.55;
+const WAKE_AMPLITUDE = 0.35;
 
 type FloatUniform = { value: number };
 type FloatArrayUniform = { value: number[] };
@@ -42,6 +52,16 @@ export type ParticleUniforms = {
   readonly uVibAmplitude: FloatUniform;
   readonly uVibFrequency: FloatUniform;
   readonly uVibDrift: FloatUniform;
+  readonly uShipS: FloatUniform;
+  readonly uShipTheta: FloatUniform;
+  readonly uShipSpeed: FloatUniform;
+  readonly uWakeAmplitude: FloatUniform;
+  readonly uImpactAmplitude: FloatUniform;
+  readonly uImpactFrequency: FloatUniform;
+  readonly uImpactSpeed: FloatUniform;
+  readonly uImpactFalloff: FloatUniform;
+  readonly uImpactLifetime: FloatUniform;
+  readonly uImpacts: { value: Float32Array };
   readonly uPointSize: FloatUniform;
   readonly uPixelRatio: FloatUniform;
   readonly uColor: { value: Color };
@@ -68,6 +88,16 @@ export const createParticleUniforms = (
     uVibAmplitude: { value: VIB_AMPLITUDE },
     uVibFrequency: { value: VIB_FREQUENCY },
     uVibDrift: { value: VIB_DRIFT },
+    uShipS: { value: 0 },
+    uShipTheta: { value: 0 },
+    uShipSpeed: { value: 1 },
+    uWakeAmplitude: { value: WAKE_AMPLITUDE },
+    uImpactAmplitude: { value: IMPACT_AMPLITUDE },
+    uImpactFrequency: { value: IMPACT_FREQUENCY },
+    uImpactSpeed: { value: IMPACT_SPEED },
+    uImpactFalloff: { value: IMPACT_FALLOFF },
+    uImpactLifetime: { value: IMPACT_LIFETIME_SECONDS },
+    uImpacts: { value: new Float32Array(MAX_IMPACTS * 4) },
     uPointSize: { value: POINT_SIZE },
     uPixelRatio: { value: pixelRatio },
     uColor: { value: PARTICLE_COLOR.clone() },
@@ -112,4 +142,41 @@ export const updateParticleUniforms = (
   uniforms.uOriginS.value = frame.playerS;
   uniforms.uBaseCellS.value = Math.floor(frame.playerS / CELL_DEPTH) * CELL_DEPTH;
   uniforms.uPixelRatio.value = frame.pixelRatio;
+};
+
+export type ShipState = {
+  readonly s: number;
+  readonly theta: number;
+  readonly speed: number;
+};
+
+// The ship's tube-space position drives the tunnel-wall wake.
+export const setParticleShip = (
+  uniforms: ParticleUniforms,
+  ship: ShipState,
+): void => {
+  uniforms.uShipS.value = ship.s;
+  uniforms.uShipTheta.value = ship.theta;
+  uniforms.uShipSpeed.value = ship.speed;
+};
+
+// Pack the live ripple ring buffer into the vec4[] uniform. Unused slots carry
+// strength 0, which the shader skips.
+export const setImpactUniforms = (
+  uniforms: ParticleUniforms,
+  impacts: readonly RippleImpact[],
+): void => {
+  const data = uniforms.uImpacts.value;
+  for (let i = 0; i < MAX_IMPACTS; i += 1) {
+    const impact = impacts[i];
+    const base = i * 4;
+    if (impact === undefined) {
+      data[base + 3] = 0;
+      continue;
+    }
+    data[base] = impact.s;
+    data[base + 1] = impact.theta;
+    data[base + 2] = impact.age;
+    data[base + 3] = impact.strength;
+  }
 };

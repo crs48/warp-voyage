@@ -346,11 +346,11 @@ Stage 0 — coherent vibrating skin:
 
 Stage 1 — ripples:
 
-- [ ] Uniforms `uShipS`, `uShipTheta`, `uShipSpeed`; feed from `player` each frame; wake ring in `displace()`.
-- [ ] Near-miss detection in `updateRun` (dilated rect, grazed-not-hit, deduped `nearMissKey`); bounded `impacts` ring buffer on `RunState`.
-- [ ] `uniform vec4 uImpacts[16]` in tube-space; sum ring displacements; per-cube shiver + wall echo.
-- [ ] Inject `displace()` into cube `InstancedMesh` material via `onBeforeCompile` with an `aInward`/impact hookup.
-- [ ] Unit tests: near-miss fires once per graze, never on a hit or a clean pass; strength rises as the gap narrows; `collision.ts` untouched (existing suite green).
+- [x] Uniforms `uShipS`, `uShipTheta`, `uShipSpeed`; feed from `player` each frame; wake ring in `displace()`.
+- [x] Near-miss detection in `updateRun` (angular graze band, grazed-not-hit, deduped by centre-crossing so it fires exactly once per pass — no growing set on `RunState`); bounded `impacts` ring buffer on `RunState`.
+- [x] `uniform vec4 uImpacts[16]` in tube-space; sum ring displacements; per-cube shiver + wall echo.
+- [x] Cube near-miss shiver: implemented as a per-cube radial-inset nudge in `obstacles.ts` (reusing the shared TS ripple twin `impactRadialOffset`) rather than shader injection — instancing-friendly, silhouette-safe, and collision-inert like the ship's inset. The wall echo is the point skin's GPU `displace()`.
+- [x] Unit tests: near-miss fires once per graze, never on a hit or a clean pass; strength rises as the gap narrows; `collision.ts` untouched (existing suite green).
 
 Stage 2 — magnetization:
 
