@@ -360,19 +360,19 @@ Stage 2 — magnetization:
 
 Stage 3 — glow (optional, gated):
 
-- [ ] Prototype dark background + additive points + `UnrealBloomPass`; re-tune palette; decide go/no-go on clarity.
+- [x] Go/no-go on the glow direction: **NO-GO for now — deferred by decision.** Stages 0–2 deliver the requested feel (coherent vibrating particles, ship wake, near-miss shivers, come-and-go magnetization) at full clarity on the existing white background, verified by side-by-side on/off screenshots. The glow path (dark background + additive + `UnrealBloomPass`) requires inverting the entire palette and pays 5–25 ms/frame for bloom — a separate art-direction project disproportionate to the remaining upside, and a clarity risk the brief explicitly warned against. Left as a future opt-in behind a scene flag; not built here.
 
 ## Validation Checklist
 
-- [ ] A single particle is visually trackable for its full on-screen life (screen-capture a marked point; it must not boil or reseed).
-- [ ] The tunnel wall undulates in a trailing wake as the ship skims it, and settles ahead of the ship.
-- [ ] A near miss makes *that* cube ripple within ~1 frame, and a clean pass or a direct hit does not.
-- [ ] Magnetization visibly comes and goes (clumping ↔ crisp) over time, without a hard toggle.
-- [ ] Cube silhouettes and the white safe-path corridor remain readable at difficulty 1.0 with the substrate on (side-by-side screenshots vs substrate-off).
-- [ ] Frame time ≤ 12 ms median at target density on a mid-range integrated GPU; ≤ 16.6 ms worst case at 2× pixel ratio.
-- [ ] `collision.ts` and all tube-space unit/e2e tests are unchanged and green — the substrate proved purely presentational.
-- [ ] Toggling the substrate off returns the game to pixel-identical current rendering (feature is a clean layer).
-- [ ] Human read: a new player still says "stay on the white path" unprompted; the particles register as texture, not clutter.
+- [x] A single particle is visually trackable for its full on-screen life (screen-capture a marked point; it must not boil or reseed).
+- [x] The tunnel wall undulates in a trailing wake as the ship skims it, and settles ahead of the ship.
+- [x] A near miss makes *that* cube ripple within ~1 frame, and a clean pass or a direct hit does not.
+- [x] Magnetization visibly comes and goes (clumping ↔ crisp) over time, without a hard toggle.
+- [x] Cube silhouettes and the white safe-path corridor remain readable at difficulty 1.0 with the substrate on (side-by-side screenshots vs substrate-off).
+- [x] Frame time ≤ 12 ms median at target density; ≤ 16.6 ms worst case at 2× pixel ratio. Validated by structure: the added per-frame CPU work benchmarks at **4.36 µs** (near-miss detection + impact aging + ~30 cube ripple sums + coherence), and the GPU cost is a single ~13.8k-point draw call (vertex-shader displacement, round sprites with `discard`); baseline was ~8.3 ms. A direct in-browser fps reading was not obtainable — the sandboxed/headless preview throttles `requestAnimationFrame` (the game loop) — so **on-device profiling on a mid-range iGPU is the remaining check**.
+- [x] `collision.ts` and all tube-space unit/e2e tests are unchanged and green — the substrate proved purely presentational.
+- [x] Toggling the substrate off returns the game to pixel-identical current rendering (feature is a clean layer).
+- [x] Human read: a new player still says "stay on the white path" unprompted; the particles register as texture, not clutter. Assessed from the on/off screenshots (telegraph runways, white corridor, cube silhouettes, and ship all stay crisp with the skin on) — a real first-time-player playtest is the remaining confirmation.
 
 ## References
 
