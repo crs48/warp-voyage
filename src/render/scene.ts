@@ -2,6 +2,7 @@ import { Scene, WebGLRenderer } from "three";
 
 import { createCameraRig, type CameraRig } from "./camera";
 import { createObstacleView } from "./obstacles";
+import { createParticleSystem, type ParticleSystem } from "./particles/system";
 import { createShipView } from "./ship";
 import { createTubeView } from "./tubeMesh";
 
@@ -12,11 +13,15 @@ export type RenderScene = {
   readonly tube: ReturnType<typeof createTubeView>;
   readonly obstacles: ReturnType<typeof createObstacleView>;
   readonly ship: ReturnType<typeof createShipView>;
+  readonly particles: ParticleSystem;
   readonly dispose: () => void;
 };
 
 export type RenderSceneOptions = {
   readonly preserveDrawingBuffer?: boolean;
+  // The particle substrate is a purely additive layer; with it off, the scene
+  // graph is exactly the pre-substrate one, so rendering is byte-identical.
+  readonly showParticles?: boolean;
 };
 
 export const createRenderScene = (
@@ -38,7 +43,11 @@ export const createRenderScene = (
   const tube = createTubeView();
   const obstacles = createObstacleView();
   const ship = createShipView();
+  const particles = createParticleSystem(renderer.getPixelRatio());
   scene.add(tube.group, obstacles.group, ship.group);
+  if (options.showParticles ?? true) {
+    scene.add(particles.tubePoints);
+  }
 
   const resize = (): void => {
     cameraRig.camera.aspect = window.innerWidth / window.innerHeight;
@@ -56,6 +65,7 @@ export const createRenderScene = (
     tube,
     obstacles,
     ship,
+    particles,
     dispose: () => {
       window.removeEventListener("resize", resize);
       renderer.dispose();

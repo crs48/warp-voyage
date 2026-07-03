@@ -4,6 +4,7 @@
 
 import { resolveCollisionFrame } from "./collision";
 import { BOOST_MULTIPLIERS } from "./config";
+import { advanceImpacts, detectNearMisses, type RippleImpact } from "./impacts";
 import { maybeUpdateHighScore, scoreFromDistance } from "./scoring";
 import { advancePlayer, createInitialGameState, type GameState } from "./state";
 import {
@@ -22,6 +23,8 @@ export type RunState = {
   readonly bend: BendParams;
   readonly collectedBoosts: ReadonlySet<string>;
   readonly crashFlashSeconds: number;
+  // Presentational only: near-miss ripples the particle substrate renders.
+  readonly impacts: readonly RippleImpact[];
 };
 
 export const createRunState = (highScore: number, seed: number): RunState => ({
@@ -30,6 +33,7 @@ export const createRunState = (highScore: number, seed: number): RunState => ({
   bend: createBend(seed),
   collectedBoosts: new Set(),
   crashFlashSeconds: 0,
+  impacts: [],
 });
 
 type CollisionPass = {
@@ -95,6 +99,13 @@ export const updateRun = (
       : Math.max(state.game.highScore, score);
   const safeDt = Math.min(Math.max(dtSeconds, 0), 0.05);
 
+  const detectedImpacts = detectNearMisses(
+    framesNearDistance(world, advancedPlayer.distance),
+    state.game.player.distance,
+    advancedPlayer.distance,
+    advancedPlayer.angle,
+  );
+
   return {
     game: {
       ...state.game,
@@ -107,5 +118,6 @@ export const updateRun = (
     crashFlashSeconds: collisionState.crashed
       ? 0.75
       : Math.max(0, state.crashFlashSeconds - safeDt),
+    impacts: advanceImpacts(state.impacts, detectedImpacts, safeDt),
   };
 };
