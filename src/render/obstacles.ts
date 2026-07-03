@@ -9,7 +9,6 @@ import {
 } from "three";
 
 import {
-  cellCenterS,
   CELL_DEPTH,
   CUBE_DEPTH,
   CUBE_SIZE,
@@ -19,8 +18,7 @@ import {
 } from "../tube/space";
 import type { BendParams } from "../tube/centerline";
 import { cellTransform } from "../tube/transform";
-import { angleForLane, hasLane } from "../game/coordinates";
-import { impactRadialOffset, type RippleImpact } from "../game/impacts";
+import { hasLane } from "../game/coordinates";
 import { boostKey, frameAtDistance, type World } from "../game/world";
 import { CUBE_PALETTE } from "./palette";
 
@@ -34,10 +32,6 @@ export type ObstacleView = {
 const MAX_CUBES = VISIBLE_CELLS * LANES;
 const MAX_BOOSTS = VISIBLE_CELLS;
 const BOOST_THICKNESS = 0.14;
-// A near miss nudges the cube radially. Scaled below the wall-ripple amplitude
-// so the cube shivers rather than lurches. Collision is unaffected — this is a
-// render-only radial inset, exactly like the ship's.
-const CUBE_SHIVER_SCALE = 0.45;
 
 const PALETTE_COLORS: readonly Color[] = CUBE_PALETTE.map(
   ({ r, g, b }) => new Color(r, g, b),
@@ -94,7 +88,6 @@ export const updateObstacleView = (
   playerS: number,
   bend: BendParams,
   collectedBoosts: ReadonlySet<string>,
-  impacts: readonly RippleImpact[] = [],
 ): void => {
   const baseCell = Math.floor(playerS / CELL_DEPTH);
   let cubeCount = 0;
@@ -113,9 +106,6 @@ export const updateObstacleView = (
         continue;
       }
 
-      const shiver =
-        impactRadialOffset(cellCenterS(absoluteCell), angleForLane(lane), impacts) *
-        CUBE_SHIVER_SCALE;
       placeInstance(
         view.cubes,
         cubeCount,
@@ -124,7 +114,7 @@ export const updateObstacleView = (
         lane,
         playerS,
         bend,
-        CUBE_SIZE / 2 + CUBE_SURFACE_GAP + shiver,
+        CUBE_SIZE / 2 + CUBE_SURFACE_GAP,
       );
       view.cubes.setColorAt(
         cubeCount,
