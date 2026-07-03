@@ -103,6 +103,11 @@ uniform float uImpactSpeed;
 uniform float uImpactFalloff;
 uniform float uImpactLifetime;
 uniform vec4 uImpacts[${String(MAX_IMPACTS)}];
+
+uniform float uCoherence;
+uniform float uMagAmplitude;
+uniform float uMagFrequency;
+uniform float uMagDrift;
 `;
 
 // displace: nudge a world-space (camera-relative) anchor by the sum of every
@@ -150,6 +155,12 @@ vec3 displace(vec3 anchor, vec3 inward, float sTube, float thetaTube, float seed
 
   float radial = wv_wakeRadial(sTube, thetaTube) + wv_impactRadial(sTube, thetaTube);
   pos += inward * radial;
+
+  // Magnetization: neighbouring particles share this curl-noise flow field, so
+  // they drift into clumps and filaments together. uCoherence scales it in and
+  // out; at 0 the particles sit crisply on the lattice.
+  vec3 flow = curlNoise(anchor * uMagFrequency + vec3(uTime * uMagDrift));
+  pos += flow * uMagAmplitude * uCoherence;
   return pos;
 }
 `;

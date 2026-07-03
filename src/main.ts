@@ -6,8 +6,9 @@ import { createRunState, updateRun, type RunState } from "./game/run";
 import { readHighScore, scoreFromDistance } from "./game/scoring";
 import { findSection } from "./game/world";
 import { createInputController } from "./input/controller";
-import { TELEGRAPH_FAR_CELLS } from "./tube/space";
+import { CELL_DEPTH, TELEGRAPH_FAR_CELLS } from "./tube/space";
 import { updateCameraRig } from "./render/camera";
+import { magnetizationCoherence } from "./render/particles/coherence";
 import { createDebugOverlay, updateDebugOverlay } from "./render/debugOverlay";
 import { createHud, updateHud } from "./render/hud";
 import { updateObstacleView } from "./render/obstacles";
@@ -83,6 +84,15 @@ const renderFrame = (state: RunState, dtSeconds: number): void => {
   const player = state.game.player;
   const section = findSection(state.world, player.distance);
   const speedFactor = BOOST_MULTIPLIERS[player.boostLevel];
+  const guidance = guidanceAhead(state.world, player.distance, state.collectedBoosts);
+  const coherence = magnetizationCoherence({
+    timeSeconds: elapsedSeconds,
+    boostLevel: player.boostLevel,
+    obstacleDistance:
+      guidance.obstacle === undefined
+        ? Number.POSITIVE_INFINITY
+        : guidance.obstacle.cell * CELL_DEPTH - player.distance,
+  });
 
   updateTubeView(
     renderScene.tube,
@@ -122,6 +132,7 @@ const renderFrame = (state: RunState, dtSeconds: number): void => {
     timeSeconds: elapsedSeconds,
     pixelRatio: renderScene.renderer.getPixelRatio(),
     impacts: state.impacts,
+    coherence,
   });
   renderScene.renderer.render(renderScene.scene, renderScene.cameraRig.camera);
   updateDebugOverlay(

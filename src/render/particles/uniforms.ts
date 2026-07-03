@@ -33,6 +33,9 @@ const POINT_SIZE = 46;
 const PARTICLE_COLOR = new Color(0.04, 0.04, 0.05);
 const PARTICLE_OPACITY = 0.55;
 const WAKE_AMPLITUDE = 0.35;
+const MAG_AMPLITUDE = 0.55;
+const MAG_FREQUENCY = 0.15;
+const MAG_DRIFT = 0.2;
 
 type FloatUniform = { value: number };
 type FloatArrayUniform = { value: number[] };
@@ -62,6 +65,10 @@ export type ParticleUniforms = {
   readonly uImpactFalloff: FloatUniform;
   readonly uImpactLifetime: FloatUniform;
   readonly uImpacts: { value: Float32Array };
+  readonly uCoherence: FloatUniform;
+  readonly uMagAmplitude: FloatUniform;
+  readonly uMagFrequency: FloatUniform;
+  readonly uMagDrift: FloatUniform;
   readonly uPointSize: FloatUniform;
   readonly uPixelRatio: FloatUniform;
   readonly uColor: { value: Color };
@@ -98,6 +105,10 @@ export const createParticleUniforms = (
     uImpactFalloff: { value: IMPACT_FALLOFF },
     uImpactLifetime: { value: IMPACT_LIFETIME_SECONDS },
     uImpacts: { value: new Float32Array(MAX_IMPACTS * 4) },
+    uCoherence: { value: 0 },
+    uMagAmplitude: { value: MAG_AMPLITUDE },
+    uMagFrequency: { value: MAG_FREQUENCY },
+    uMagDrift: { value: MAG_DRIFT },
     uPointSize: { value: POINT_SIZE },
     uPixelRatio: { value: pixelRatio },
     uColor: { value: PARTICLE_COLOR.clone() },
@@ -158,6 +169,14 @@ export const setParticleShip = (
   uniforms.uShipS.value = ship.s;
   uniforms.uShipTheta.value = ship.theta;
   uniforms.uShipSpeed.value = ship.speed;
+};
+
+// How magnetized the tunnel particles are right now, in [0, 1].
+export const setParticleCoherence = (
+  uniforms: ParticleUniforms,
+  coherence: number,
+): void => {
+  uniforms.uCoherence.value = coherence;
 };
 
 // Pack the live ripple ring buffer into the vec4[] uniform. Unused slots carry

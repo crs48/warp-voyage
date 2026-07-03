@@ -11,6 +11,7 @@ import {
   createParticleUniforms,
   setImpactUniforms,
   setParticleBend,
+  setParticleCoherence,
   setParticleShip,
   updateParticleUniforms,
   type ParticleUniforms,
@@ -37,6 +38,7 @@ export type ParticleUpdate = {
   readonly timeSeconds: number;
   readonly pixelRatio: number;
   readonly impacts: readonly RippleImpact[];
+  readonly coherence: number;
 };
 
 export const updateParticleSystem = (
@@ -59,4 +61,5 @@ export const updateParticleSystem = (
     speed: update.speedFactor,
   });
   setImpactUniforms(system.uniforms, update.impacts);
+  setParticleCoherence(system.uniforms, update.coherence);
 };

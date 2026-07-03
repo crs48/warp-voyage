@@ -354,9 +354,9 @@ Stage 1 — ripples:
 
 Stage 2 — magnetization:
 
-- [ ] `uCoherence` uniform; lattice↔curl-flow blend in `displace()`.
-- [ ] Slow oscillator + boost kick + telegraph damping to drive `uCoherence`.
-- [ ] Optional per-surface coherence (ship stays crisp).
+- [x] `uCoherence` uniform; lattice↔curl-flow blend in `displace()`.
+- [x] Slow oscillator + boost kick + telegraph damping to drive `uCoherence`.
+- [x] Optional per-surface coherence (ship stays crisp).
 
 Stage 3 — glow (optional, gated):
 
