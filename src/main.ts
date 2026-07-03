@@ -11,6 +11,7 @@ import { updateCameraRig } from "./render/camera";
 import { createDebugOverlay, updateDebugOverlay } from "./render/debugOverlay";
 import { createHud, updateHud } from "./render/hud";
 import { updateObstacleView } from "./render/obstacles";
+import { updateParticleSystem } from "./render/particles/system";
 import { createRenderScene } from "./render/scene";
 import { updateShipView } from "./render/ship";
 import { updateTubeView } from "./render/tubeMesh";
@@ -51,6 +52,9 @@ const hud = createHud(app);
 const debugOverlay = createDebugOverlay(app);
 const renderScene = createRenderScene(canvasHost, {
   preserveDrawingBuffer: import.meta.env.MODE === "test",
+  // Opt out with ?particles=off to confirm the substrate is a clean layer.
+  showParticles:
+    new URLSearchParams(window.location.search).get("particles") !== "off",
 });
 const input = createInputController(hud.gyro, hud.gyroStatus);
 
@@ -61,6 +65,7 @@ const newRun = (): RunState => {
 
 let run = newRun();
 let lastTimeMs: number | undefined;
+let elapsedSeconds = 0;
 
 const restart = (): void => {
   run = newRun();
@@ -108,6 +113,12 @@ const renderFrame = (state: RunState, dtSeconds: number): void => {
     state.bend,
     state.crashFlashSeconds,
   );
+  updateParticleSystem(renderScene.particles, {
+    bend: state.bend,
+    playerS: player.distance,
+    timeSeconds: elapsedSeconds,
+    pixelRatio: renderScene.renderer.getPixelRatio(),
+  });
   renderScene.renderer.render(renderScene.scene, renderScene.cameraRig.camera);
   updateDebugOverlay(
     debugOverlay,
@@ -130,6 +141,7 @@ renderScene.renderer.setAnimationLoop((timeMs: number) => {
   const dtSeconds =
     lastTimeMs === undefined ? 0 : (timeMs - lastTimeMs) / 1_000;
   lastTimeMs = timeMs;
+  elapsedSeconds = timeMs / 1_000;
 
   run = updateRun(run, input.getSteer(), dtSeconds, window.localStorage);
   renderFrame(run, dtSeconds);

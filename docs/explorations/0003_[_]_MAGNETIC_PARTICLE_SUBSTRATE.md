@@ -337,12 +337,12 @@ material.onBeforeCompile = (shader) => {
 
 Stage 0 — coherent vibrating skin:
 
-- [ ] Add `src/render/particles/displacement.glsl.ts` with `curlNoise`/`snoise` + `displace()` (vibration term only to start).
-- [ ] Add `src/render/particles/pointSkin.ts`: build `THREE.Points` with static `aTubeS`, `aTheta`, `aSeed` (absolute-address hash), `aInward` attributes; scatter ~48–64 pts/panel across the visible tube.
-- [ ] GPU-side tube-space→world in the point vertex shader (port `tubePoint` + `bendOffset`), driven by bend + `originS` uniforms.
-- [ ] Round soft-mask fragment shader; point-size attenuation; `depthWrite:false`, normal alpha blend, dark/palette tint.
-- [ ] Wire into `src/render/scene.ts` and update uniforms in `main.ts`'s loop; keep panel mesh + cubes drawn underneath, dimmed.
-- [ ] Unit test: GPU anchor (recomputed in TS) matches `tubePoint` within ε at sampled `(s, θ)`.
+- [x] Add `src/render/particles/displacement.glsl.ts` with `curlNoise`/`snoise` + `displace()` (vibration term only to start).
+- [x] Add `src/render/particles/pointSkin.ts`: build `THREE.Points` with static `aTubeS`, `aTheta`, `aSeed` (absolute-address hash), `aInward` attributes; scatter ~48–64 pts/panel across the visible tube.
+- [x] GPU-side tube-space→world in the point vertex shader (port `tubePoint` + `bendOffset`), driven by bend + `originS` uniforms.
+- [x] Round soft-mask fragment shader; point-size attenuation; `depthWrite:false`, normal alpha blend, dark/palette tint.
+- [x] Wire into `src/render/scene.ts` and update uniforms in `main.ts`'s loop; keep panel mesh + cubes drawn underneath, dimmed.
+- [x] Unit test: GPU anchor (recomputed in TS) matches `tubePoint` within ε at sampled `(s, θ)`.
 
 Stage 1 — ripples:
 
